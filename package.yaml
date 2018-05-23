@@ -8,6 +8,7 @@ copyright: "2018 Theam"
 synopsis: Scrap your qualified import clutter
 description: See <https://theam.github.io/require>
 category: Other
+license-file: LICENSE.md
 
 extra-source-files:
 - CHANGELOG.md
@@ -24,10 +25,10 @@ default-extensions:
   - TypeApplications
 
 dependencies:
-  - base
-  - universum
-  - bytestring
-  - text
+  - base >= 4.11 && < 5
+  - universum >= 1.2.0 && < 2
+  - bytestring >= 0.10 && < 0.11
+  - text >= 1.2.3.0 && < 2
 
 library:
   source-dirs: library
@@ -42,8 +43,6 @@ executables:
     - -rtsopts
     - -threaded
     - -with-rtsopts=-N
-    exposed-modules:
-    - Require
 
 benchmarks:
   require-benchmarks:
