@@ -1,0 +1,71 @@
+name: require
+version: '0.0.1'
+github: "theam/require"
+license: Apache-2.0
+author: "The Agile Monkeys"
+maintainer: "hackers@theam.io"
+copyright: "2018 Theam"
+synopsis: Scrap your qualified import clutter
+description: See <https://theam.github.io/require>
+category: Other
+
+extra-source-files:
+- CHANGELOG.md
+- LICENSE.md
+- package.yaml
+- README.md
+- stack.yaml
+
+ghc-options: -Wall
+
+default-extensions:
+  - NoImplicitPrelude
+  - OverloadedStrings
+  - TypeApplications
+
+dependencies:
+  - base
+  - universum
+  - bytestring
+  - text
+
+library:
+  source-dirs: library
+
+executables:
+  requirepp:
+    source-dirs: executable
+    main: Main.hs
+    dependencies:
+    - require
+    ghc-options:
+    - -rtsopts
+    - -threaded
+    - -with-rtsopts=-N
+    exposed-modules:
+    - Require
+
+benchmarks:
+  require-benchmarks:
+    source-dirs: benchmark
+    main: Main.hs
+    dependencies:
+    - require
+    - criterion
+    ghc-options:
+    - -rtsopts
+    - -threaded
+    - -with-rtsopts=-N
+
+tests:
+  require-test-suite:
+    source-dirs: test-suite
+    main: Main.hs
+    dependencies:
+    - require
+    - tasty
+    - tasty-hspec
+    ghc-options:
+    - -rtsopts
+    - -threaded
+    - -with-rtsopts=-N
