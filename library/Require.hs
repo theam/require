@@ -43,7 +43,7 @@ convertIfNeeded (FileName fn) lineNumber texts =
                   <> show lineNumber
                   <> " \""
                   <> fn
-                  <> "\" #-}"
+                  <> "\" #-}\n"
       in
         typeImport
         <> "\n"
