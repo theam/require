@@ -1,4 +1,5 @@
 # require
+## Scrap your qualified import clutter
 
 Most of the time we find ourselves following this pattern in Haskell:
 
