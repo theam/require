@@ -600,7 +600,7 @@ getCode :: Person -&gt; String
 getCode p =
   name p &lt;&gt; (show $ age p)
 </code></pre>
-<p>This way, the code becomes simpler, and allows you to separate concerns in larger applications.</p>
+<p>This way, the code becomes simpler, allowing you to separate concerns in larger applications.</p>
 <h2>Using the person module from another one</h2>
 <p>Now, to use these definitions, we use <strong>require</strong>.</p>
 <pre class="haskell"><code>require Person
