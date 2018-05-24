@@ -21,6 +21,17 @@ require Data.Text
 require Data.ByteString
 ```
 
+Here, the last part of the module is converted to a qualified alias, and a
+type corresponding to it:
+
+```haskell
+require Data.Text
+```
+
+Will import `Data.Text` qualified as `Text` and the `Text` type.
+
+There are more options, you can check them out [in the require docs](01-how-require-works.html).
+
 # How to use require
 
 * Add `require` to your project dependencies
