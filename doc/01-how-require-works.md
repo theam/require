@@ -6,7 +6,7 @@ title: How require works
 
 **require** is a Haskell preprocessor.
 
-This means that every source file will be threaded through **require** before compiling it with GHC.
+Every source file will be threaded through **require** before compiling it with GHC.
 This allows to add a `require` keyword that handles imports.
 
 ## Why not Template Haskell?

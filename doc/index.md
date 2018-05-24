@@ -13,7 +13,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString
 ```
 
-**require** adds a new keyword, `require` that abstracts this.
+**require** adds a new keyword that abstracts this.
 The former code snippet can be reduced to
 
 ```haskell

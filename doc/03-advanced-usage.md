@@ -49,7 +49,7 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Strict
 ```
 
-So putting everything together, the full require for this module would be:
+So putting everything together, the full require for this module is:
 
 ```haskell
 require Data.HashMap.Strict as HM (HashMap)
