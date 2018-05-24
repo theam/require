@@ -1,5 +1,5 @@
 name: require
-version: '0.0.1'
+version: '0.1.0'
 github: "theam/require"
 license: Apache-2.0
 author: "The Agile Monkeys"
@@ -23,12 +23,14 @@ default-extensions:
   - NoImplicitPrelude
   - OverloadedStrings
   - TypeApplications
+  - RecordWildCards
 
 dependencies:
   - base >= 4.11 && < 5
   - universum >= 1.2.0 && < 2
   - bytestring >= 0.10 && < 0.11
   - text >= 1.2.3.0 && < 2
+  - megaparsec >= 6.5.0 && < 7
 
 library:
   source-dirs: library

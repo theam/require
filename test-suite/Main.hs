@@ -37,3 +37,28 @@ spec = parallel $ do
     actual `shouldContain`   expectedTypeImport
     actual `shouldContain`   expectedQualifiedImport
     actual `shouldEndWith`   expectedContent
+
+  it "aliases the modules properly" $ do
+    let input = "require Data.Text as Foo"
+    let expectedTypeImport = "import Data.Text (Text)"
+    let expectedQualifiedImport = "import qualified Data.Text as Foo"
+    let actual = toString $ Require.transform (Require.FileName "Foo.hs") input
+    actual `shouldContain`   expectedTypeImport
+    actual `shouldContain`   expectedQualifiedImport
+
+  it "imports the types properly" $ do
+    let input = "require Data.Text (Foo)"
+    let expectedTypeImport = "import Data.Text (Foo)"
+    let expectedQualifiedImport = "import qualified Data.Text as Text"
+    let actual = toString $ Require.transform (Require.FileName "Foo.hs") input
+    actual `shouldContain`   expectedTypeImport
+    actual `shouldContain`   expectedQualifiedImport
+
+  it "imports the types and aliases the modules properly" $ do
+    let input = "require Data.Text as Quux (Foo)"
+    let expectedTypeImport = "import Data.Text (Foo)"
+    let expectedQualifiedImport = "import qualified Data.Text as Quux"
+    let actual = toString $ Require.transform (Require.FileName "Foo.hs") input
+    actual `shouldContain`   expectedTypeImport
+    actual `shouldContain`   expectedQualifiedImport
+
