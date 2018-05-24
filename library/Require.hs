@@ -2,53 +2,67 @@ module Require where
 
 import Universum
 
-import qualified Data.Text as Text
+import qualified Text.Megaparsec      as Megaparsec
+import qualified Text.Megaparsec.Char as Megaparsec
+import qualified Data.Text            as Text
 
-newtype FileName = FileName Text
+newtype FileName   = FileName Text
+newtype LineNumber = LineNumber Int
+type Parser        = Megaparsec.Parsec Void Text
+
+
+data RequireInfo = RequireInfo
+  { riFullModuleName :: Text
+  , riModuleAlias    :: Text
+  , riImportedTypes  :: Maybe [Text]
+  } deriving Show
+
 
 transform :: FileName -> Text -> Text
 transform filename input =
-  let
-    foo = Text.lines input
-          <&> (Text.splitOn "require")
-          &   zip [1..]
-          <&> (\(lineNumber, texts) -> convertIfNeeded filename lineNumber texts)
-          &   Text.concat
-  in foo
+  Text.lines input
+  &   zip [1..]
+  <&> (\(ln, text) -> maybe (text <> "\n") (renderImport filename (LineNumber ln)) $ Megaparsec.parseMaybe requireParser text )
+  &   Text.concat
 
 
-convertIfNeeded :: FileName -> Int -> [Text] -> Text
-convertIfNeeded (FileName fn) lineNumber texts =
-  case texts of
-    ["", moduleName] ->
-      let
-        moduleLast = Text.reverse moduleName
-                     & Text.takeWhile (/= '.')
-                     & Text.reverse
+renderImport :: FileName -> LineNumber -> RequireInfo -> Text
+renderImport (FileName fn) (LineNumber ln) RequireInfo {..} =
+  lineTag <> typesImport <> lineTag <> qualifiedImport
+ where
+  lineTag = "{-# LINE "
+            <> show ln
+            <> " \""
+            <> fn
+            <> "\" #-}\n"
+  types = maybe (Text.takeWhileEnd (/= '.') riFullModuleName) (Text.intercalate ",") riImportedTypes
+  typesImport = "import " <> riFullModuleName <> " (" <> types <> ")\n"
+  qualifiedImport = "import qualified " <> riFullModuleName <> " as " <> riModuleAlias <> "\n"
 
-        qualifiedImport = lineTag
-                          <> "import qualified"
-                          <> moduleName
-                          <> " as "
-                          <> moduleLast
 
-        typeImport = lineTag
-                     <> "import"
-                     <> moduleName
-                     <> " ("
-                     <> moduleLast
-                     <> ")"
+requireParser :: Parser RequireInfo
+requireParser = do
+  void $ Megaparsec.string "require"
+  void $ Megaparsec.space1
+  module' <- Megaparsec.some (Megaparsec.alphaNumChar <|> Megaparsec.punctuationChar)
+  void $ Megaparsec.space
 
-        lineTag = "{-# LINE "
-                  <> show lineNumber
-                  <> " \""
-                  <> fn
-                  <> "\" #-}\n"
-      in
-        typeImport
-        <> "\n"
-        <> qualifiedImport
-        <> "\n"
+  alias'  <- Megaparsec.try $ Megaparsec.option Nothing $ do
+    void $ Megaparsec.string "as"
+    void $ Megaparsec.space1
+    Just <$> Megaparsec.some (Megaparsec.alphaNumChar)
 
-    otherList ->
-      unlines otherList
+  void $ Megaparsec.space
+
+  types'  <- Megaparsec.option Nothing $ do
+    void $ Megaparsec.char '('
+    t' <- Megaparsec.some (Megaparsec.alphaNumChar <|> Megaparsec.char ',' <|> Megaparsec.char ' ')
+    void $ Megaparsec.char ')'
+    return $ Just t'
+
+  return RequireInfo
+    { riFullModuleName = toText $ module'
+    , riModuleAlias    = maybe (Text.takeWhileEnd (/= '.') $ toText module') toText alias'
+    , riImportedTypes  = fmap Text.strip <$> Text.splitOn "," <$> toText <$> types'
+    }
+
