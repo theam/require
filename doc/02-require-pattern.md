@@ -40,7 +40,7 @@ getCode p =
   name p <> (show $ age p)
 ```
 
-This way, the code becomes simpler, and allows you to separate concerns in larger applications.
+This way, the code becomes simpler, allowing you to separate concerns in larger applications.
 
 ## Using the person module from another one
 
