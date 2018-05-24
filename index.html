@@ -584,6 +584,12 @@ The former code snippet can be reduced to</p>
 <pre class="haskell"><code>require Data.Text
 require Data.ByteString
 </code></pre>
+<p>Here, the last part of the module is converted to a qualified alias, and a
+type corresponding to it:</p>
+<pre class="haskell"><code>require Data.Text
+</code></pre>
+<p>Will import <code>Data.Text</code> qualified as <code>Text</code> and the <code>Text</code> type.</p>
+<p>There are more options, you can check them out <a href="01-how-require-works.html">in the require docs</a>.</p>
 <h1>How to use require</h1>
 <ul>
 <li>Add <code>require</code> to your project dependencies</li>
