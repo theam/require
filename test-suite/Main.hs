@@ -28,12 +28,14 @@ spec = parallel $ do
 
   it "keeps the rest of the content intact" $ do
     let input                   = "module Foo where\nrequire Data.Text\nfoo = 42"
+    let expectedStart           = "{-# LINE 1"
     let expectedModule          = "module Foo where"
     let expectedTypeImport      = "import Data.Text (Text)"
     let expectedQualifiedImport = "import qualified Data.Text as Text"
     let expectedContent         = "foo = 42\n"
     let actual                  = toString $ Require.transform (Require.FileName "Foo.hs") input
-    actual `shouldStartWith` expectedModule
+    actual `shouldStartWith` expectedStart
+    actual `shouldContain`   expectedModule
     actual `shouldContain`   expectedTypeImport
     actual `shouldContain`   expectedQualifiedImport
     actual `shouldEndWith`   expectedContent

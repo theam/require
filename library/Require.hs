@@ -22,19 +22,23 @@ transform :: FileName -> Text -> Text
 transform filename input =
   Text.lines input
   &   zip [1..]
-  <&> (\(ln, text) -> maybe (text <> "\n") (renderImport filename (LineNumber ln)) $ Megaparsec.parseMaybe requireParser text )
+  <&> (\(ln, text) -> maybe (lineTag filename (LineNumber ln) <> text <> "\n") (renderImport filename (LineNumber ln)) $ Megaparsec.parseMaybe requireParser text )
   &   Text.concat
 
 
+lineTag :: FileName -> LineNumber -> Text
+lineTag (FileName fn) (LineNumber ln) =
+  "{-# LINE "
+  <> show ln
+  <> " \""
+  <> fn
+  <> "\" #-}\n"
+
+
 renderImport :: FileName -> LineNumber -> RequireInfo -> Text
-renderImport (FileName fn) (LineNumber ln) RequireInfo {..} =
-  lineTag <> typesImport <> lineTag <> qualifiedImport
+renderImport filename linenumber RequireInfo {..} =
+  lineTag filename linenumber <> typesImport <> lineTag filename linenumber <> qualifiedImport
  where
-  lineTag = "{-# LINE "
-            <> show ln
-            <> " \""
-            <> fn
-            <> "\" #-}\n"
   types = maybe (Text.takeWhileEnd (/= '.') riFullModuleName) (Text.intercalate ",") riImportedTypes
   typesImport = "import " <> riFullModuleName <> " (" <> types <> ")\n"
   qualifiedImport = "import qualified " <> riFullModuleName <> " as " <> riModuleAlias <> "\n"
