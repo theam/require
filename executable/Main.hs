@@ -10,5 +10,6 @@ import qualified Require
 main :: IO ()
 main = do
   (_:inFile:outFile:_) <- System.getArgs
+  prepended <- readFile "/home/nick/.require"
   content <- readFile inFile
-  writeFile outFile $ Require.transform (Require.FileName $ toText inFile) content
+  writeFile outFile $ Require.transform (Require.FileName $ toText inFile) prepended content

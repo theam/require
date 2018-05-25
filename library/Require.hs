@@ -17,14 +17,28 @@ data RequireInfo = RequireInfo
   , riImportedTypes  :: Maybe [Text]
   } deriving Show
 
+transform :: FileName -> Text -> Text -> Text
+transform filename prepended input
+  | noAutorequire  = transform' False filename prepended input
+  | otherwise      = transform' True filename prepended input
+ where
+  noAutorequire = (length $ filter (\t -> "autorequire" `Text.isPrefixOf` t) $ lines input) == 0
 
-transform :: FileName -> Text -> Text
-transform filename input =
+transform' :: Bool -> FileName -> Text -> Text -> Text
+transform' shouldPrepend filename prepended input =
   Text.lines input
   &   zip [1..]
+  >>= prependAfterModuleLine
+  &   filter (\(_, t) -> not $ "autorequire" `Text.isPrefixOf` t)
   <&> (\(ln, text) -> maybe (lineTag filename (LineNumber ln) <> text <> "\n") (renderImport filename (LineNumber ln)) $ Megaparsec.parseMaybe requireParser text )
   &   Text.concat
-
+ where
+  enumeratedPrepend ln
+   | shouldPrepend = zip (repeat ln) (Text.lines prepended )
+   | otherwise     = []
+  prependAfterModuleLine (ln, text)
+   | "where" `Text.isInfixOf` text = (ln, text) : enumeratedPrepend (ln)
+   | otherwise                      = [(ln, text)]
 
 lineTag :: FileName -> LineNumber -> Text
 lineTag (FileName fn) (LineNumber ln) =
