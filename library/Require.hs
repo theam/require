@@ -22,6 +22,10 @@ requireMain :: IO ()
 requireMain = undefined
 
 
+autorequireMain :: IO ()
+autorequireMain = undefined
+
+
 transform :: Bool -> FileName -> Text -> Text -> Text
 transform auorequireEnabled filename imports input
   | autorequireEnabled = transform' True filename imports input
