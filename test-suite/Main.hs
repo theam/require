@@ -6,6 +6,9 @@ import qualified Data.Text as Text
 
 import qualified Require
 
+
+import Preprocessed
+
 main :: IO ()
 main = do
     test <- testSpec "require" spec
