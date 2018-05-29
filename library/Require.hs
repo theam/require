@@ -17,12 +17,19 @@ data RequireInfo = RequireInfo
   , riImportedTypes  :: Maybe [Text]
   } deriving Show
 
-transform :: FileName -> Text -> Text -> Text
-transform filename prepended input
+
+requireMain :: IO ()
+requireMain = undefined
+
+
+transform :: Bool -> FileName -> Text -> Text -> Text
+transform requireEnabled filename prepended input
+  | requireEnabled = transform' True filename prepended input
   | noAutorequire  = transform' False filename prepended input
   | otherwise      = transform' True filename prepended input
  where
   noAutorequire = (length $ filter (\t -> "autorequire" `Text.isPrefixOf` t) $ lines input) == 0
+
 
 transform' :: Bool -> FileName -> Text -> Text -> Text
 transform' shouldPrepend filename prepended input =

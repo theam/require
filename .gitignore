@@ -1,4 +1,28 @@
-# Stack uses this directory as scratch space.
-/.stack-work/
-# Stack generates the Cabal file from `package.yaml` through hpack.
-/*.cabal
+# Created by https://www.gitignore.io/api/haskell
+
+### Haskell ###
+dist
+dist-*
+cabal-dev
+*.o
+*.hi
+*.chi
+*.chs.h
+*.dyn_o
+*.dyn_hi
+.hpc
+.hsenv
+.cabal-sandbox/
+cabal.sandbox.config
+*.prof
+*.aux
+*.hp
+*.eventlog
+.stack-work/
+cabal.project.local
+.HTF/
+.ghc.environment.*
+
+
+# End of https://www.gitignore.io/api/haskell
+

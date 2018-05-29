@@ -3,13 +3,26 @@
 -- wrote in their libraries.
 import Universum
 
-import System.Environment as System
+import Options.Generic
 
 import qualified Require
 
+data CommandArguments =
+  CommandArguments Text Bool Text Text
+  deriving Generic
+
+instance ParseRecord CommandArguments
+
+
 main :: IO ()
 main = do
-  (_:inFile:outFile:_) <- System.getArgs
+  CommandArguments _ autorequire inputFile outputFile <- getRecord "Require Haskell preprocessor" :: IO CommandArguments
   prepended <- readFile "/home/nick/.require"
-  content <- readFile inFile
-  writeFile outFile $ Require.transform (Require.FileName $ toText inFile) prepended content
+  content <- readFile (toString inputFile)
+  writeFile
+    (toString outputFile)
+    (Require.transform
+      autorequire
+      (Require.FileName inputFile)
+      prepended
+      content)
