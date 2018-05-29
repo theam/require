@@ -26,7 +26,7 @@ default-extensions:
   - RecordWildCards
 
 dependencies:
-  - base >= 4.11 && < 5
+  - base >= 4.9 && < 5
   - universum >= 1.2.0 && < 2
   - bytestring >= 0.10 && < 0.11
   - text >= 1.2.3.0 && < 2
