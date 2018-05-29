@@ -23,10 +23,10 @@ requireMain = undefined
 
 
 transform :: Bool -> FileName -> Text -> Text -> Text
-transform requireEnabled filename prepended input
-  | requireEnabled = transform' True filename prepended input
-  | noAutorequire  = transform' False filename prepended input
-  | otherwise      = transform' True filename prepended input
+transform auorequireEnabled filename imports input
+  | autorequireEnabled = transform' True filename imports input
+  | noAutorequire  = transform' False filename imports input
+  | otherwise      = transform' True filename imports input
  where
   noAutorequire = (length $ filter (\t -> "autorequire" `Text.isPrefixOf` t) $ lines input) == 0
 
