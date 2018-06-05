@@ -5,11 +5,11 @@ import Universum
 import qualified Text.Megaparsec      as Megaparsec
 import qualified Text.Megaparsec.Char as Megaparsec
 import qualified Data.Text            as Text
+import Options.Generic
 
 newtype FileName   = FileName Text
 newtype LineNumber = LineNumber Int
 type Parser        = Megaparsec.Parsec Void Text
-
 
 data RequireInfo = RequireInfo
   { riFullModuleName :: Text
@@ -17,17 +17,46 @@ data RequireInfo = RequireInfo
   , riImportedTypes  :: Maybe [Text]
   } deriving Show
 
+data CommandArguments =
+  CommandArguments Text Text Text
+  deriving Generic
+
+instance ParseRecord CommandArguments
+
+findFile :: Text -> IO Text
+findFile requires = do
+  files <- getDirectoryContents getCurrentDirectory
+  let textFiles = fmap pack files
+  return $ $ filter (isSuffixOf requires) textFiles
 
 requireMain :: IO ()
-requireMain = undefined
-
+requireMain = do
+  CommandArguments _ inputFile outputFile <- getRecord "Require Haskell preprocessor" :: IO CommandArguments
+  prepended <- readFile (findFile "Requires")
+  content <- readFile (toString inputFile)
+  writeFile
+    (toString outputFile)
+    (Require.transform
+      False
+      (Require.FileName inputFile)
+      prepended
+      content)
 
 autorequireMain :: IO ()
-autorequireMain = undefined
-
+autorequireMain = do
+  CommandArguments _ inputFile outputFile <- getRecord "Require Haskell preprocessor" :: IO CommandArguments
+  prepended <- readFile findRequiresFile
+  content <- readFile (toString inputFile)
+  writeFile
+    (toString outputFile)
+    (Require.transform
+      True
+      (Require.FileName inputFile)
+      prepended
+      content)
 
 transform :: Bool -> FileName -> Text -> Text -> Text
-transform auorequireEnabled filename imports input
+transform autorequireEnabled filename imports input
   | autorequireEnabled = transform' True filename imports input
   | noAutorequire  = transform' False filename imports input
   | otherwise      = transform' True filename imports input
@@ -94,4 +123,3 @@ requireParser = do
     , riModuleAlias    = maybe (Text.takeWhileEnd (/= '.') $ toText module') toText alias'
     , riImportedTypes  = fmap Text.strip <$> Text.splitOn "," <$> toText <$> types'
     }
-

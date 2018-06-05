@@ -22,7 +22,6 @@ cabal-version:  >= 1.10
 extra-source-files:
     CHANGELOG.md
     LICENSE.md
-    package.yaml
     README.md
     stack.yaml
 
@@ -49,28 +48,34 @@ library
     , megaparsec
     , text
     , universum
+    , optparse-generic
   default-language: Haskell2010
 
-executable requirepp
-  main-is: Main.hs
+executable autorequirepp
+  main-is: AutoRequireMain.hs
   other-modules:
       Paths_require
   hs-source-dirs:
       executable
-  default-extensions: NoImplicitPrelude
-                    , OverloadedStrings
-                    , TypeApplications
-                    , RecordWildCards
-                    , DeriveGeneric
   ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
   build-depends:
-      base
-    , bytestring
-    , megaparsec
-    , require
-    , text
+    base
     , universum
-    , optparse-generic
+    , require
+  default-language: Haskell2010
+
+
+executable requirepp
+  main-is: RequireMain.hs
+  other-modules:
+      Paths_require
+  hs-source-dirs:
+      executable
+  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
+  build-depends:
+    base
+    , universum
+    , require
   default-language: Haskell2010
 
 test-suite require-test-suite
