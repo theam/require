@@ -2,6 +2,7 @@
 -- and only use it in the executable. Doing so allows others to use what you
 -- wrote in their libraries.
 import qualified Require
+import Universum
 
 main :: IO ()
 main = Require.autorequireMain
