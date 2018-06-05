@@ -30,6 +30,8 @@ require Data.Text
 
 Will import `Data.Text` qualified as `Text` and the `Text` type.
 
+Also, you have the option of automating this, by using [the autorequire feature](04-Automatic-require.html).
+
 There are more options, you can check them out [in the require docs](01-how-require-works.html).
 
 # How to use require

@@ -5,7 +5,7 @@
 -- hash: 5dc05682310683e6ab7c29271662be2e19580bb6649199a1113abb9be9ab7dc3
 
 name:           require
-version:        0.1.1
+version:        0.3.0
 synopsis:       Scrap your qualified import clutter
 description:    See <https://theam.github.io/require>
 category:       Other
@@ -50,6 +50,7 @@ library
     , universum
     , optparse-generic
     , directory
+    , inliterate
   default-language: Haskell2010
 
 executable autorequirepp
