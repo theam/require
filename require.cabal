@@ -1,0 +1,136 @@
+-- This file has been generated from package.yaml by hpack version 0.28.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 2fa682738101bd5933b8d5450cabb633a9132643c4227869a8c39cfb153d7848
+
+name:           require
+version:        0.3.0
+synopsis:       Scrap your qualified import clutter
+description:    See <https://theam.github.io/require>
+category:       Other
+homepage:       https://github.com/theam/require#readme
+bug-reports:    https://github.com/theam/require/issues
+author:         The Agile Monkeys
+maintainer:     hackers@theam.io
+copyright:      2018 Theam
+license:        Apache-2.0
+license-file:   LICENSE.md
+build-type:     Simple
+cabal-version:  >= 1.10
+extra-source-files:
+    CHANGELOG.md
+    LICENSE.md
+    package.yaml
+    README.md
+    stack.yaml
+
+source-repository head
+  type: git
+  location: https://github.com/theam/require
+
+library
+  exposed-modules:
+      Require
+  other-modules:
+      Paths_require
+  hs-source-dirs:
+      library
+  default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
+  ghc-options: -Wall
+  build-depends:
+      base >=4.9 && <5
+    , bytestring >=0.10 && <0.11
+    , directory
+    , inliterate
+    , megaparsec >=6.5.0 && <7
+    , optparse-generic
+    , text >=1.2.3.0 && <2
+    , universum >=1.2.0 && <2
+  default-language: Haskell2010
+
+executable autorequirepp
+  main-is: Main.hs
+  other-modules:
+      Paths_require
+  hs-source-dirs:
+      executable/AutoRequire/
+  default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
+  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
+  build-depends:
+      base >=4.9 && <5
+    , bytestring >=0.10 && <0.11
+    , directory
+    , inliterate
+    , megaparsec >=6.5.0 && <7
+    , optparse-generic
+    , require
+    , text >=1.2.3.0 && <2
+    , universum >=1.2.0 && <2
+  default-language: Haskell2010
+
+executable requirepp
+  main-is: Main.hs
+  other-modules:
+      Paths_require
+  hs-source-dirs:
+      executable/Require/
+  default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
+  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
+  build-depends:
+      base >=4.9 && <5
+    , bytestring >=0.10 && <0.11
+    , directory
+    , inliterate
+    , megaparsec >=6.5.0 && <7
+    , optparse-generic
+    , require
+    , text >=1.2.3.0 && <2
+    , universum >=1.2.0 && <2
+  default-language: Haskell2010
+
+test-suite require-test-suite
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Preprocessed
+      Paths_require
+  hs-source-dirs:
+      test-suite
+  default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
+  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
+  build-depends:
+      base >=4.9 && <5
+    , bytestring >=0.10 && <0.11
+    , directory
+    , inliterate
+    , megaparsec >=6.5.0 && <7
+    , optparse-generic
+    , require
+    , tasty
+    , tasty-hspec
+    , text >=1.2.3.0 && <2
+    , universum >=1.2.0 && <2
+  default-language: Haskell2010
+
+benchmark require-benchmarks
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_require
+  hs-source-dirs:
+      benchmark
+  default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
+  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
+  build-depends:
+      base >=4.9 && <5
+    , bytestring >=0.10 && <0.11
+    , criterion
+    , directory
+    , inliterate
+    , megaparsec >=6.5.0 && <7
+    , optparse-generic
+    , require
+    , text >=1.2.3.0 && <2
+    , universum >=1.2.0 && <2
+  default-language: Haskell2010

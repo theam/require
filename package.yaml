@@ -1,5 +1,5 @@
 name: require
-version: '0.2.1'
+version: '0.3.0'
 github: "theam/require"
 license: Apache-2.0
 author: "The Agile Monkeys"
@@ -24,6 +24,7 @@ default-extensions:
   - OverloadedStrings
   - TypeApplications
   - RecordWildCards
+  - DeriveGeneric
 
 dependencies:
   - base >= 4.9 && < 5
@@ -31,16 +32,28 @@ dependencies:
   - bytestring >= 0.10 && < 0.11
   - text >= 1.2.3.0 && < 2
   - megaparsec >= 6.5.0 && < 7
+  - directory
+  - inliterate
+  - optparse-generic
 
 library:
   source-dirs: library
 
 executables:
   requirepp:
-    source-dirs: executable
+    source-dirs: executable/Require/
     main: Main.hs
     dependencies:
     - require
+    ghc-options:
+    - -rtsopts
+    - -threaded
+    - -with-rtsopts=-N
+  autorequirepp:
+    source-dirs: executable/AutoRequire/
+    main: Main.hs
+    dependencies:
+      - require
     ghc-options:
     - -rtsopts
     - -threaded
