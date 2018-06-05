@@ -6,6 +6,7 @@ import qualified Text.Megaparsec      as Megaparsec
 import qualified Text.Megaparsec.Char as Megaparsec
 import qualified Data.Text            as Text
 import Options.Generic
+import System.Directory
 
 newtype FileName   = FileName Text
 newtype LineNumber = LineNumber Int
@@ -23,37 +24,46 @@ data CommandArguments =
 
 instance ParseRecord CommandArguments
 
-findFile :: Text -> IO Text
-findFile requires = do
-  files <- getDirectoryContents getCurrentDirectory
-  let textFiles = fmap pack files
-  return $ $ filter (isSuffixOf requires) textFiles
+findRequires :: IO (Maybe Text)
+findRequires = do
+  currentDir <- getCurrentDirectory
+  files <- getDirectoryContents currentDir
+  let textFiles = fmap toText files
+  return $ head <$> (nonEmpty $ filter (Text.isSuffixOf "Requires") textFiles)
 
 requireMain :: IO ()
 requireMain = do
   CommandArguments _ inputFile outputFile <- getRecord "Require Haskell preprocessor" :: IO CommandArguments
-  prepended <- readFile (findFile "Requires")
-  content <- readFile (toString inputFile)
-  writeFile
-    (toString outputFile)
-    (Require.transform
-      False
-      (Require.FileName inputFile)
-      prepended
-      content)
+  requiresFile <- findRequires
+  case requiresFile of
+    Nothing -> die "There is no Requires file in the system"
+    Just x -> do
+      file <- readFile $ toString x
+      content <- readFile (toString inputFile)
+      writeFile
+        (toString outputFile)
+        (Require.transform
+          False
+          (Require.FileName inputFile)
+          file
+          content)
 
 autorequireMain :: IO ()
 autorequireMain = do
   CommandArguments _ inputFile outputFile <- getRecord "Require Haskell preprocessor" :: IO CommandArguments
-  prepended <- readFile findRequiresFile
-  content <- readFile (toString inputFile)
-  writeFile
-    (toString outputFile)
-    (Require.transform
-      True
-      (Require.FileName inputFile)
-      prepended
-      content)
+  requiresFile <- findRequires
+  case requiresFile of
+    Nothing -> die "There is no Requires file in the system"
+    Just x -> do
+      file <- readFile $ toString x
+      content <- readFile (toString inputFile)
+      writeFile
+        (toString outputFile)
+        (Require.transform
+          True
+          (Require.FileName inputFile)
+          file
+          content)
 
 transform :: Bool -> FileName -> Text -> Text -> Text
 transform autorequireEnabled filename imports input
