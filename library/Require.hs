@@ -8,7 +8,7 @@ import qualified Data.Text            as Text
 import Options.Generic
 import System.Directory
 
-newtype FileName   = FileName Text
+newtype FileName   = FileName { unFileName :: Text }
 newtype LineNumber = LineNumber Int
 type Parser        = Megaparsec.Parsec Void Text
 
@@ -84,7 +84,7 @@ transform' shouldPrepend filename prepended input =
   &   Text.concat
  where
   enumeratedPrepend ln
-   | shouldPrepend = zip (repeat ln) (Text.lines prepended )
+   | shouldPrepend = zip (repeat ln) (filter (not . (\x -> x `Text.isInfixOf` (unFileName filename))) (Text.lines prepended))
    | otherwise     = []
   prependAfterModuleLine (ln, text)
    | "where" `Text.isInfixOf` text = (ln, text) : enumeratedPrepend (ln)
