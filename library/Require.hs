@@ -84,7 +84,7 @@ transform' shouldPrepend filename prepended input =
   &   Text.concat
  where
   enumeratedPrepend ln
-   | shouldPrepend = zip (repeat ln) (filter (not . (\x -> (unFileName filename) `Text.isInfixOf` x)) (Text.lines prepended))
+   | shouldPrepend = zip (repeat ln) (filter (not . Text.isInfixOf (unFileName filename)) (Text.lines prepended))
    | otherwise     = []
   prependAfterModuleLine (ln, text)
    | "where" `Text.isInfixOf` text = (ln, text) : enumeratedPrepend (ln)
