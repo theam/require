@@ -84,7 +84,7 @@ transform' shouldPrepend filename prepended input =
   &   Text.concat
  where
   enumeratedPrepend ln
-   | shouldPrepend = zip (repeat ln) (filter (not . Text.isInfixOf (unFileName filename)) (Text.lines prepended))
+   | shouldPrepend = zip (repeat ln) (Text.lines prepended)
    | otherwise     = []
   prependAfterModuleLine (ln, text)
    | "where" `Text.isInfixOf` text = (ln, text) : enumeratedPrepend (ln)
@@ -101,7 +101,9 @@ lineTag (FileName fn) (LineNumber ln) =
 
 renderImport :: FileName -> LineNumber -> RequireInfo -> Text
 renderImport filename linenumber RequireInfo {..} =
-  lineTag filename linenumber <> typesImport <> lineTag filename linenumber <> qualifiedImport
+  case (Text.isInfixOf riFullModuleName (unFileName filename)) of
+    True  -> ""
+    False -> lineTag filename linenumber <> typesImport <> lineTag filename linenumber <> qualifiedImport
  where
   types = maybe (Text.takeWhileEnd (/= '.') riFullModuleName) (Text.intercalate ",") riImportedTypes
   typesImport = "import " <> riFullModuleName <> " (" <> types <> ")\n"
