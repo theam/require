@@ -77,9 +77,9 @@ transform autorequireEnabled filename imports input
 transform' :: Bool -> FileName -> Text -> Text -> Text
 transform' shouldPrepend filename prepended input =
   Text.lines input
+  &   filter (\t -> not $ "autorequire" `Text.isPrefixOf` t)
   &   zip [1..]
   >>= prependAfterModuleLine
-  &   filter (\(_, t) -> not $ "autorequire" `Text.isPrefixOf` t)
   <&> (\(ln, text) -> maybe (lineTag filename (LineNumber ln) <> text <> "\n") (renderImport filename (LineNumber ln)) $ Megaparsec.parseMaybe requireParser text )
   &   Text.concat
  where
@@ -87,7 +87,16 @@ transform' shouldPrepend filename prepended input =
    | shouldPrepend = zip (repeat ln) (Text.lines prepended)
    | otherwise     = []
   prependAfterModuleLine (ln, text)
-   | "where" `Text.isInfixOf` text = (ln, text) : enumeratedPrepend (ln)
+   | ("instance" `Text.isPrefixOf` text)
+     && ("where" `Text.isInfixOf`) text = [(ln, text)]
+   | ("data" `Text.isPrefixOf` text)
+     && ("where" `Text.isInfixOf`) text = [(ln, text)]
+   | ("class" `Text.isPrefixOf` text)
+     && ("where" `Text.isInfixOf`) text = [(ln, text)]
+   | (not $ "instance" `Text.isPrefixOf` text)
+     && (not $ "class" `Text.isPrefixOf` text)
+     && (not $ "data" `Text.isPrefixOf` text)
+     && ("where" `Text.isInfixOf`) text = (ln, text) : enumeratedPrepend (ln)
    | otherwise                      = [(ln, text)]
 
 lineTag :: FileName -> LineNumber -> Text
