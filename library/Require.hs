@@ -87,16 +87,18 @@ transform' shouldPrepend filename prepended input =
    | shouldPrepend = zip (repeat ln) (Text.lines prepended)
    | otherwise     = []
   prependAfterModuleLine (ln, text)
+   | ("module" `Text.isPrefixOf` text)
+     && ("where" `Text.isSuffixOf`) text = (ln, text) : enumeratedPrepend ln
    | ("instance" `Text.isPrefixOf` text)
-     && ("where" `Text.isInfixOf`) text = [(ln, text)]
+     && ("where" `Text.isSuffixOf`) text = [(ln, text)]
    | ("data" `Text.isPrefixOf` text)
-     && ("where" `Text.isInfixOf`) text = [(ln, text)]
+     && ("where" `Text.isSuffixOf`) text = [(ln, text)]
    | ("class" `Text.isPrefixOf` text)
-     && ("where" `Text.isInfixOf`) text = [(ln, text)]
+     && ("where" `Text.isSuffixOf`) text = [(ln, text)]
    | (not $ "instance" `Text.isPrefixOf` text)
      && (not $ "class" `Text.isPrefixOf` text)
      && (not $ "data" `Text.isPrefixOf` text)
-     && ("where" `Text.isInfixOf`) text = (ln, text) : enumeratedPrepend (ln)
+     && ("where" `Text.isPrefixOf`) text = (ln, text) : enumeratedPrepend (ln)
    | otherwise                      = [(ln, text)]
 
 lineTag :: FileName -> LineNumber -> Text
