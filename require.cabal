@@ -2,10 +2,10 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 012c22a3a115ef41f68f2a508fa8d2fd2b3a94074dae6a894526936fbebc69d4
+-- hash: 594ca7f466defab634bcc5a8afa821a67a437a703efe1537dda645ad6086c2f9
 
 name:           require
-version:        0.4.0
+version:        0.4.1
 synopsis:       Scrap your qualified import clutter
 description:    See <https://theam.github.io/require>
 category:       Other
