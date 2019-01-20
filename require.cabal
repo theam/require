@@ -2,10 +2,10 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e9aaf6b31fcd7b6876b35a6ae91cda69a2955b3e79080bf76dafd5ddb013bdec
+-- hash: 594ca7f466defab634bcc5a8afa821a67a437a703efe1537dda645ad6086c2f9
 
 name:           require
-version:        0.3.3
+version:        0.4.1
 synopsis:       Scrap your qualified import clutter
 description:    See <https://theam.github.io/require>
 category:       Other
@@ -44,7 +44,7 @@ library
     , bytestring >=0.10 && <0.11
     , directory
     , inliterate
-    , megaparsec >=6.5.0 && <7
+    , megaparsec >=7 && <8
     , optparse-generic
     , text >=1.2.3.0 && <2
     , universum >=1.2.0 && <2
@@ -63,7 +63,7 @@ executable autorequirepp
     , bytestring >=0.10 && <0.11
     , directory
     , inliterate
-    , megaparsec >=6.5.0 && <7
+    , megaparsec >=7 && <8
     , optparse-generic
     , require
     , text >=1.2.3.0 && <2
@@ -83,7 +83,7 @@ executable requirepp
     , bytestring >=0.10 && <0.11
     , directory
     , inliterate
-    , megaparsec >=6.5.0 && <7
+    , megaparsec >=7 && <8
     , optparse-generic
     , require
     , text >=1.2.3.0 && <2
@@ -105,7 +105,7 @@ test-suite require-test-suite
     , bytestring >=0.10 && <0.11
     , directory
     , inliterate
-    , megaparsec >=6.5.0 && <7
+    , megaparsec >=7 && <8
     , optparse-generic
     , require
     , tasty
@@ -129,7 +129,7 @@ benchmark require-benchmarks
     , criterion
     , directory
     , inliterate
-    , megaparsec >=6.5.0 && <7
+    , megaparsec >=7 && <8
     , optparse-generic
     , require
     , text >=1.2.3.0 && <2
