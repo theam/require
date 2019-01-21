@@ -2,10 +2,10 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 594ca7f466defab634bcc5a8afa821a67a437a703efe1537dda645ad6086c2f9
+-- hash: d137a452230c193641b2f17f7eaca960c2f427449f4d9c1197cfb30248c4c870
 
 name:           require
-version:        0.4.1
+version:        0.4.2
 synopsis:       Scrap your qualified import clutter
 description:    See <https://theam.github.io/require>
 category:       Other
@@ -94,7 +94,6 @@ test-suite require-test-suite
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Preprocessed
       Paths_require
   hs-source-dirs:
       test-suite

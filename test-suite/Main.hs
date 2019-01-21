@@ -7,8 +7,6 @@ import qualified Data.Text as Text
 import qualified Require
 
 
-import Preprocessed
-
 main :: IO ()
 main = do
     test <- testSpec "require" spec
@@ -67,5 +65,3 @@ spec = parallel $ do
     actual `shouldContain`   expectedTypeImport
     actual `shouldContain`   expectedQualifiedImport
 
-  it "Autorequires properly" $ do
-    foo "asd." `shouldBe` "asd"
