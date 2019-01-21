@@ -3,7 +3,6 @@
 -- see: https://github.com/sol/hpack
 --
 -- hash: d137a452230c193641b2f17f7eaca960c2f427449f4d9c1197cfb30248c4c870
-
 name:           require
 version:        0.4.2
 synopsis:       Scrap your qualified import clutter
