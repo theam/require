@@ -80,7 +80,8 @@ transform' shouldPrepend filename prepended input =
   &   filter (\t -> not $ "autorequire" `Text.isPrefixOf` t)
   &   zip [1..]
   >>= prependAfterModuleLine
-  <&> (\(ln, text) -> maybe (lineTag filename (LineNumber ln) <> text <> "\n") (renderImport filename (LineNumber ln)) $ Megaparsec.parseMaybe requireParser text )
+  <&> (\(ln, text) -> maybe (text <> "\n") (renderImport filename (LineNumber ln)) $ Megaparsec.parseMaybe requireParser text)
+  &   (lineTag filename (LineNumber 1) :)
   &   Text.concat
  where
   enumeratedPrepend ln
@@ -114,7 +115,7 @@ renderImport :: FileName -> LineNumber -> RequireInfo -> Text
 renderImport filename linenumber RequireInfo {..} =
   case (Text.isInfixOf riFullModuleName (unFileName filename)) of
     True  -> ""
-    False -> lineTag filename linenumber <> typesImport <> lineTag filename linenumber <> qualifiedImport
+    False -> typesImport <> lineTag filename linenumber <> qualifiedImport
  where
   types = maybe (Text.takeWhileEnd (/= '.') riFullModuleName) (Text.intercalate ",") riImportedTypes
   typesImport = "import " <> riFullModuleName <> " (" <> types <> ")\n"
