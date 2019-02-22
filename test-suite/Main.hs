@@ -1,8 +1,8 @@
-import Universum
+import           Universum
 
+import qualified Data.Text        as Text
 import qualified Test.Tasty
-import Test.Tasty.Hspec
-import qualified Data.Text as Text
+import           Test.Tasty.Hspec
 
 import qualified Require
 
@@ -65,3 +65,8 @@ spec = parallel $ do
     actual `shouldContain`   expectedTypeImport
     actual `shouldContain`   expectedQualifiedImport
 
+  it "skips comments" $ do
+    let input    = "require Data.Text -- test of comments"
+    let expected = "import Data.Text (Text)"
+    let actual   = Require.transform False (Require.FileName "Foo.hs") "" input
+    expected `Text.isInfixOf` actual

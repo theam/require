@@ -142,6 +142,12 @@ requireParser = do
     void $ Megaparsec.char ')'
     return $ Just t'
 
+  void $ Megaparsec.option Nothing $ do
+    void $ Megaparsec.space
+    void $ Megaparsec.some (Megaparsec.char '-')
+    void $ Megaparsec.many (Megaparsec.alphaNumChar <|> Megaparsec.char ' ')
+    return Nothing
+
   return RequireInfo
     { riFullModuleName = toText $ module'
     , riModuleAlias    = maybe (Text.takeWhileEnd (/= '.') $ toText module') toText alias'
