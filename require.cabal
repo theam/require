@@ -1,8 +1,11 @@
--- This file has been generated from package.yaml by hpack version 0.28.2.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d137a452230c193641b2f17f7eaca960c2f427449f4d9c1197cfb30248c4c870
+-- hash: a267003ca98aa55c16263ffd29a841cabb53afd4596f212390bd1d12a78b9a69
+
 name:           require
 version:        0.4.2
 synopsis:       Scrap your qualified import clutter
@@ -16,14 +19,13 @@ copyright:      2018 Theam
 license:        Apache-2.0
 license-file:   LICENSE.md
 build-type:     Simple
-cabal-version:  >= 1.10
 extra-source-files:
     CHANGELOG.md
     LICENSE.md
     package.yaml
     README.md
-    Requires
     stack.yaml
+    Requires
 
 source-repository head
   type: git
