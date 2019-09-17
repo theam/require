@@ -138,7 +138,7 @@ requireParser = do
 
   types'  <- Megaparsec.option Nothing $ do
     void $ Megaparsec.char '('
-    t' <- Megaparsec.some (Megaparsec.alphaNumChar <|> Megaparsec.char ',' <|> Megaparsec.char ' ')
+    t' <- Megaparsec.many (Megaparsec.alphaNumChar <|> Megaparsec.char ',' <|> Megaparsec.char ' ')
     void $ Megaparsec.char ')'
     return $ Just t'
 
