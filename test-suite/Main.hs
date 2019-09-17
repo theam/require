@@ -70,3 +70,12 @@ spec = parallel $ do
     let expected = "import Data.Text (Text)"
     let actual   = Require.transform False (Require.FileName "Foo.hs") "" input
     expected `Text.isInfixOf` actual
+
+  it "allows empty parentheses" $ do
+    let input       = "require Data.Text ()"
+    let expected1   = "import Data.Text ()"
+    let expected2   = "import qualified Data.Text as Text"
+    let actual      = lines $ Require.transform False (Require.FileName "Foo.hs") "" input
+    actual `shouldSatisfy` elem expected1
+    actual `shouldSatisfy` elem expected2
+
