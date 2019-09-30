@@ -98,6 +98,16 @@ spec = parallel $ do
       actual `shouldSatisfy` elem "module Main where"
       actual `shouldSatisfy` elem "import A"
       actual `shouldSatisfy` elem "import B"
+    it "keeps requires where the module is a substring of the filename" $ do
+      -- Test case for https://github.com/theam/require/issues/20
+      let fileInput = Text.unlines [ "module FooTest where", "require Foo" ]
+      let expected1 = "import Foo (Foo)"
+      let expected2 = "import qualified Foo as Foo"
+      let actual = lines $ Require.transform False
+            (Require.FileInput (Require.FileName "FooTests.hs") fileInput)
+            emptyRequiresFile
+      actual `shouldSatisfy` elem expected1
+      actual `shouldSatisfy` elem expected2
 
   describe "autorequire-mode" $ do
     describe "inclusion after module directive" $ do
