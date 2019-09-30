@@ -79,3 +79,11 @@ spec = parallel $ do
     actual `shouldSatisfy` elem expected1
     actual `shouldSatisfy` elem expected2
 
+  it "keeps requires where the module is a substring of the filename" $ do
+    -- Test case for https://github.com/theam/require/issues/20
+    let input     = "require Foo"
+    let expected1 = "import Foo (Foo)"
+    let expected2 = "import qualified Foo as Foo"
+    let actual    = lines $ Require.transform False (Require.FileName "FooTests.hs") "" input
+    actual `shouldSatisfy` elem expected1
+    actual `shouldSatisfy` elem expected2
