@@ -79,6 +79,13 @@ spec = parallel $ do
     actual `shouldSatisfy` elem expected1
     actual `shouldSatisfy` elem expected2
 
+  it "autorequire does not lead to self-imports" $ do
+    let fileInput     = "module Foo.Bar where"
+    let requireInput  = "require Foo.Bar"
+    let notExpected   = "import Foo.Bar"
+    let actual        = Require.transform True (Require.FileName "src/Foo/Bar.hs") requireInput fileInput
+    toString actual `shouldNotContain` notExpected
+
   it "keeps requires where the module is a substring of the filename" $ do
     -- Test case for https://github.com/theam/require/issues/20
     let input     = "require Foo"
