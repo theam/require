@@ -67,3 +67,10 @@ spec = parallel $ do
     let actual = lines $ Require.transform False (Require.FileName "Foo.hs") "" input
     actual `shouldSatisfy` elem expected1
     actual `shouldSatisfy` elem expected2
+
+  it "autorequire does not lead to self-imports" $ do
+    let fileInput     = "module Foo.Bar where"
+    let requireInput  = "require Foo.Bar"
+    let notExpected   = "import Foo.Bar"
+    let actual        = Require.transform True (Require.FileName "src/Foo/Bar.hs") requireInput fileInput
+    toString actual `shouldNotContain` notExpected
