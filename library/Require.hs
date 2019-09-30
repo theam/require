@@ -78,8 +78,8 @@ transform autorequireEnabled filename imports input
 transform' :: Bool -> FileName -> Text -> Text -> Text
 transform' shouldPrepend filename prepended input =
   Text.lines input
-    & filter (\t -> not $ "autorequire" `Text.isPrefixOf` t)
     & zip [1 ..]
+    & filter (\(_, t) -> not $ "autorequire" `Text.isPrefixOf` t)
     >>= prependAfterModuleLine
     <&> (\(ln, text) -> maybe (text <> "\n") (renderImport filename (LineNumber ln)) $ Megaparsec.parseMaybe requireParser text)
     & (lineTag filename (LineNumber 1) :)
