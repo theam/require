@@ -16,6 +16,11 @@ newtype LineNumber = LineNumber Int
 
 data LineTag = LineTag !FileName !LineNumber
 
+data FileInput = FileInput
+  { fiFileName :: FileName,
+    fiContent :: Text
+  }
+
 type Parser = Megaparsec.Parsec Void Text
 
 data RequireInfo
@@ -32,26 +37,23 @@ data CommandArguments
 
 instance ParseRecord CommandArguments
 
-findRequires :: IO (Maybe Text)
+findRequires :: IO (Maybe FileName)
 findRequires = do
   currentDir <- getCurrentDirectory
   files <- getDirectoryContents currentDir
   let textFiles = fmap toText files
-  return $ head <$> nonEmpty (filter (Text.isSuffixOf "Requires") textFiles)
+  return $ FileName . head <$> nonEmpty (filter (Text.isSuffixOf "Requires") textFiles)
+
+readFile' :: FileName -> IO FileInput
+readFile' f = FileInput f <$> readFileText (toFilePath f)
+
+toFilePath :: FileName -> FilePath
+toFilePath = toString . unFileName
 
 requireMain :: IO ()
 requireMain = do
   CommandArguments inputFile _ outputFile <- getRecord "Require Haskell preprocessor" :: IO CommandArguments
-  content <- readFile (toString inputFile)
-  writeFile
-    (toString outputFile)
-    ( toString $
-        Require.transform
-          False
-          (Require.FileName inputFile)
-          ""
-          (toText content)
-    )
+  run False Nothing (FileName inputFile) (FileName outputFile)
 
 autorequireMain :: IO ()
 autorequireMain = do
@@ -59,18 +61,19 @@ autorequireMain = do
   requiresFile <- findRequires
   case requiresFile of
     Nothing -> die "There is no Requires file in the system"
-    Just x -> do
-      file <- readFile $ toString x
-      content <- readFile (toString inputFile)
-      writeFile
-        (toString outputFile)
-        ( toString $
-            Require.transform
-              True
-              (Require.FileName inputFile)
-              (toText file)
-              (toText content)
-        )
+    Just _  -> run True requiresFile (FileName inputFile) (FileName outputFile)
+
+run :: Bool -> Maybe FileName -> FileName -> FileName -> IO ()
+run autorequire requiresFile inputFile outputFile = do
+  input <- readFile' inputFile
+  requires <- traverse readFile' requiresFile
+  let transformed =
+        Require.transform
+          autorequire
+          inputFile
+          (foldMap fiContent requires)
+          (fiContent input)
+  writeFileText (toFilePath outputFile) transformed
 
 transform :: Bool -> FileName -> Text -> Text -> Text
 transform autorequireEnabled filename imports input
