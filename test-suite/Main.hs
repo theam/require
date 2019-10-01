@@ -11,19 +11,22 @@ main = do
 
 spec :: Spec
 spec = parallel $ do
+  let emptyRequiresFile =
+        Just $ Require.FileInput (Require.FileName "Requires") ""
+
   it "transforms the 'require' keyword into a properly qualified import" $ do
     let input = "require Data.Text"
     let expected = "import qualified Data.Text as Text"
     let actual = Require.transform False
           (Require.FileInput (Require.FileName "Foo.hs") input)
-          ""
+          emptyRequiresFile
     expected `Text.isInfixOf` actual
   it "imports the type based on the module" $ do
     let input = "require Data.Text"
     let expected = "import Data.Text (Text)"
     let actual = Require.transform False
           (Require.FileInput (Require.FileName "Foo.hs") input)
-          ""
+          emptyRequiresFile
     expected `Text.isInfixOf` actual
   it "keeps the rest of the content intact" $ do
     let input = "module Foo where\nrequire Data.Text\nfoo = 42"
@@ -34,7 +37,7 @@ spec = parallel $ do
     let expectedContent = "foo = 42\n"
     let actual = toString $ Require.transform False
           (Require.FileInput (Require.FileName "Foo.hs") input)
-          ""
+          emptyRequiresFile
     actual `shouldStartWith` expectedStart
     actual `shouldContain` expectedModule
     actual `shouldContain` expectedTypeImport
@@ -46,7 +49,7 @@ spec = parallel $ do
     let expectedQualifiedImport = "import qualified Data.Text as Foo"
     let actual = toString $ Require.transform False
           (Require.FileInput (Require.FileName "Foo.hs") input)
-          ""
+          emptyRequiresFile
     actual `shouldContain` expectedTypeImport
     actual `shouldContain` expectedQualifiedImport
   it "imports the types properly" $ do
@@ -55,7 +58,7 @@ spec = parallel $ do
     let expectedQualifiedImport = "import qualified Data.Text as Text"
     let actual = toString $ Require.transform False
           (Require.FileInput (Require.FileName "Foo.hs") input)
-          ""
+          emptyRequiresFile
     actual `shouldContain` expectedTypeImport
     actual `shouldContain` expectedQualifiedImport
   it "imports the types and aliases the modules properly" $ do
@@ -64,7 +67,7 @@ spec = parallel $ do
     let expectedQualifiedImport = "import qualified Data.Text as Quux"
     let actual = toString $ Require.transform False
           (Require.FileInput (Require.FileName "Foo.hs") input)
-          ""
+          emptyRequiresFile
     actual `shouldContain` expectedTypeImport
     actual `shouldContain` expectedQualifiedImport
   it "skips comments" $ do
@@ -72,7 +75,7 @@ spec = parallel $ do
     let expected = "import Data.Text (Text)"
     let actual = Require.transform False
           (Require.FileInput (Require.FileName "Foo.hs") input)
-          ""
+          emptyRequiresFile
     expected `Text.isInfixOf` actual
   it "allows empty parentheses" $ do
     let input = "require Data.Text ()"
@@ -80,7 +83,7 @@ spec = parallel $ do
     let expected2 = "import qualified Data.Text as Text"
     let actual = lines $ Require.transform False
           (Require.FileInput (Require.FileName "Foo.hs") input)
-          ""
+          emptyRequiresFile
     actual `shouldSatisfy` elem expected1
     actual `shouldSatisfy` elem expected2
   it "autorequire does not lead to self-imports" $ do
@@ -89,5 +92,5 @@ spec = parallel $ do
     let notExpected = "import Foo.Bar"
     let actual = Require.transform True
           (Require.FileInput (Require.FileName "src/Foo/Bar.hs") fileInput)
-          requireInput
+          (Just $ Require.FileInput (Require.FileName "Requires") requireInput)
     toString actual `shouldNotContain` notExpected

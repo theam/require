@@ -76,24 +76,20 @@ run :: Bool -> Maybe FileName -> FileName -> FileName -> IO ()
 run autorequire requiresFile inputFile outputFile = do
   input <- readFile' inputFile
   requires <- traverse readFile' requiresFile
-  let transformed =
-        Require.transform
-          autorequire
-          input
-          (foldMap fiContent requires)
+  let transformed = Require.transform autorequire input requires
   writeFileText (toFilePath outputFile) transformed
 
-transform :: Bool -> FileInput -> Text -> Text
-transform autorequireEnabled input =
-  transform'
-    (autorequireEnabled || autorequireDirective)
-    input
+transform :: Bool -> FileInput -> Maybe FileInput -> Text
+transform autorequireEnabled input requireInput =
+  transform' input $ do
+    guard $ autorequireEnabled || autorequireDirective
+    requireInput
  where
    autorequireDirective =
      any (\t -> "autorequire" `Text.isPrefixOf` t) $ Text.lines $ fiContent input
 
-transform' :: Bool -> FileInput -> Text -> Text
-transform' shouldPrepend input prepended =
+transform' :: FileInput -> Maybe FileInput -> Text
+transform' input prepended =
   fileInputLines input
     & filter (\(_, t) -> not $ "autorequire" `Text.isPrefixOf` t)
     >>= prependAfterModuleLine
@@ -101,13 +97,11 @@ transform' shouldPrepend input prepended =
     & (renderLineTag (initialLineTag input) :)
     & Text.concat
   where
-    enumeratedPrepend ln
-      | shouldPrepend = zip (repeat ln) (Text.lines prepended)
-      | otherwise = []
+    prependedLines = foldMap fileInputLines prepended
     prependAfterModuleLine (ln, text)
       | ("module" `Text.isPrefixOf` text)
           && ("where" `Text.isSuffixOf`) text =
-        (ln, text) : enumeratedPrepend ln
+        (ln, text) : prependedLines
       | ("instance" `Text.isPrefixOf` text)
           && ("where" `Text.isSuffixOf`) text =
         [(ln, text)]
@@ -121,7 +115,7 @@ transform' shouldPrepend input prepended =
           && not ("class" `Text.isPrefixOf` text)
           && not ("data" `Text.isPrefixOf` text)
           && ("where" `Text.isPrefixOf`) text =
-        (ln, text) : enumeratedPrepend ln
+        (ln, text) : prependedLines
       | otherwise = [(ln, text)]
 
 renderLineTag :: LineTag -> Text
