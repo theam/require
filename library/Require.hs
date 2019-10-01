@@ -9,13 +9,16 @@ import qualified Text.Megaparsec.Char as Megaparsec
 
 newtype FileName = FileName {unFileName :: Text}
 
+newtype ModuleName = ModuleName { unModuleName :: Text }
+  deriving (Eq, Show)
+
 newtype LineNumber = LineNumber Int
 
 type Parser = Megaparsec.Parsec Void Text
 
 data RequireInfo
   = RequireInfo
-      { riFullModuleName :: Text,
+      { riFullModuleName :: ModuleName,
         riModuleAlias :: Text,
         riImportedTypes :: Maybe [Text]
       }
@@ -118,13 +121,25 @@ lineTag (FileName fn) (LineNumber ln) =
 
 renderImport :: FileName -> LineNumber -> RequireInfo -> Text
 renderImport filename linenumber RequireInfo {..} =
-  if Text.isInfixOf riFullModuleName (unFileName filename)
+  if unModuleName riFullModuleName `Text.isInfixOf` unFileName filename
     then ""
     else typesImport <> lineTag filename linenumber <> qualifiedImport
   where
-    types = maybe (Text.takeWhileEnd (/= '.') riFullModuleName) (Text.intercalate ",") riImportedTypes
-    typesImport = "import " <> riFullModuleName <> " (" <> types <> ")\n"
-    qualifiedImport = "import qualified " <> riFullModuleName <> " as " <> riModuleAlias <> "\n"
+    types = maybe
+      (Text.takeWhileEnd (/= '.') (unModuleName riFullModuleName))
+      (Text.intercalate ",")
+      riImportedTypes
+    typesImport = Text.unwords
+      [ "import"
+      , unModuleName riFullModuleName
+      , "(" <> types <> ")"
+      ] <> "\n"
+    qualifiedImport = Text.unwords
+      [ "import qualified"
+      , unModuleName riFullModuleName
+      , "as"
+      , riModuleAlias
+      ] <> "\n"
 
 requireParser :: Parser RequireInfo
 requireParser = do
@@ -149,7 +164,7 @@ requireParser = do
     return Nothing
   return
     RequireInfo
-      { riFullModuleName = toText module',
+      { riFullModuleName = ModuleName $ toText module',
         riModuleAlias = maybe (Text.takeWhileEnd (/= '.') $ toText module') toText alias',
         riImportedTypes = (fmap Text.strip <$> Text.splitOn ",") . toText <$> types'
       }
