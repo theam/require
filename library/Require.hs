@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Require where
 
 import qualified Data.Text as Text
@@ -13,6 +14,7 @@ newtype ModuleName = ModuleName { unModuleName :: Text }
   deriving (Eq, Show)
 
 newtype LineNumber = LineNumber Int
+  deriving (Enum)
 
 data LineTag = LineTag !FileName !LineNumber
 
@@ -37,6 +39,18 @@ data CommandArguments
 
 instance ParseRecord CommandArguments
 
+
+initialLineTag :: FileInput -> LineTag
+initialLineTag fi = LineTag (fiFileName fi) (LineNumber 1)
+
+advanceLineTag :: LineTag -> LineTag
+advanceLineTag (LineTag fn ln) = LineTag fn (succ ln)
+
+renderLineTag :: LineTag -> Text
+renderLineTag (LineTag (FileName fn) (LineNumber ln)) =
+  "{-# LINE " <> show ln <> " \"" <> fn <> "\" #-}\n"
+
+
 findRequires :: IO (Maybe FileName)
 findRequires = do
   currentDir <- getCurrentDirectory
@@ -53,11 +67,9 @@ toFilePath = toString . unFileName
 fileInputLines :: FileInput -> [(LineTag, Text)]
 fileInputLines fi = zip lineTags contents
   where
-    lineTags = LineTag (fiFileName fi) . LineNumber <$> [1..]
+    lineTags = iterate advanceLineTag (initialLineTag fi)
     contents = Text.lines (fiContent fi)
 
-initialLineTag :: FileInput -> LineTag
-initialLineTag fi = LineTag (fiFileName fi) (LineNumber 1)
 
 requireMain :: IO ()
 requireMain = do
@@ -117,14 +129,6 @@ transform' input prepended =
           && ("where" `Text.isPrefixOf`) text =
         (ln, text) : prependedLines
       | otherwise = [(ln, text)]
-
-renderLineTag :: LineTag -> Text
-renderLineTag (LineTag (FileName fn) (LineNumber ln)) =
-  "{-# LINE "
-    <> show ln
-    <> " \""
-    <> fn
-    <> "\" #-}\n"
 
 renderImport :: LineTag -> RequireInfo -> Text
 renderImport line@(LineTag (FileName fn) _) RequireInfo {..} =
