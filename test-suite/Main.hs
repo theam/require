@@ -86,26 +86,29 @@ spec = parallel $ do
           emptyRequiresFile
     actual `shouldSatisfy` elem expected1
     actual `shouldSatisfy` elem expected2
-  it "autorequire does not lead to self-imports" $ do
-    let fileInput = "module Foo.Bar where"
-    let requireInput = "require Foo.Bar"
-    let notExpected = "import Foo.Bar"
-    let actual = Require.transform True
-          (Require.FileInput (Require.FileName "src/Foo/Bar.hs") fileInput)
-          (Just $ Require.FileInput (Require.FileName "Requires") requireInput)
-    toString actual `shouldNotContain` notExpected
-  it "surrounds the contents of the Requires file with LINE pragmas" $ do
-    let fileInput = Text.unlines [ "module Main where", "import B" ]
-    let requireInput = Text.unlines [ "import A" ]
-    let expected = Text.unlines
-          [ "{-# LINE \"Foo.hs\" 1 #-}"
-          , "module Main where"
-          , "{-# LINE \"Requires\" 1 #-}"
-          , "import A"
-          , "{-# LINE \"Foo.hs\" 2 #-}"
-          , "import B"
-          ]
-    let actual = Require.transform True
-          (Require.FileInput (Require.FileName "Foo.hs") fileInput)
-          (Just $ Require.FileInput (Require.FileName "Requires") requireInput)
-    actual `shouldBe` expected
+
+  describe "autorequire-mode" $ do
+    it "drops self-imports" $ do
+      let fileInput = "module Foo.Bar where"
+      let requireInput = "require Foo.Bar"
+      let notExpected = "import Foo.Bar"
+      let actual = Require.transform True
+            (Require.FileInput (Require.FileName "src/Foo/Bar.hs") fileInput)
+            (Require.FileInput (Require.FileName "Requires") requireInput)
+      toString actual `shouldNotContain` notExpected
+
+    it "adds LINE pragmas around the Requires contents" $ do
+      let fileInput = Text.unlines [ "module Main where", "import B" ]
+      let requireInput = Text.unlines [ "import A" ]
+      let expected = Text.unlines
+            [ "{-# LINE 1 \"Foo.hs\" #-}"
+            , "module Main where"
+            , "{-# LINE 1 \"Requires\" #-}"
+            , "import A"
+            , "{-# LINE 2 \"Foo.hs\" #-}"
+            , "import B"
+            ]
+      let actual = Require.transform True
+            (Require.FileInput (Require.FileName "Foo.hs") fileInput)
+            (Require.FileInput (Require.FileName "Requires") requireInput)
+      actual `shouldBe` expected
