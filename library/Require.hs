@@ -14,6 +14,8 @@ newtype ModuleName = ModuleName { unModuleName :: Text }
 
 newtype LineNumber = LineNumber Int
 
+data LineTag = LineTag !FileName !LineNumber
+
 type Parser = Megaparsec.Parsec Void Text
 
 data RequireInfo
@@ -85,7 +87,7 @@ transform' shouldPrepend filename prepended input =
     & filter (\(_, t) -> not $ "autorequire" `Text.isPrefixOf` t)
     >>= prependAfterModuleLine
     <&> (\(ln, text) -> maybe (text <> "\n") (renderImport filename (LineNumber ln)) $ Megaparsec.parseMaybe requireParser text)
-    & (lineTag filename (LineNumber 1) :)
+    & (renderLineTag (LineTag filename (LineNumber 1)) :)
     & Text.concat
   where
     enumeratedPrepend ln
@@ -111,8 +113,8 @@ transform' shouldPrepend filename prepended input =
         (ln, text) : enumeratedPrepend ln
       | otherwise = [(ln, text)]
 
-lineTag :: FileName -> LineNumber -> Text
-lineTag (FileName fn) (LineNumber ln) =
+renderLineTag :: LineTag -> Text
+renderLineTag (LineTag (FileName fn) (LineNumber ln)) =
   "{-# LINE "
     <> show ln
     <> " \""
@@ -123,7 +125,7 @@ renderImport :: FileName -> LineNumber -> RequireInfo -> Text
 renderImport filename linenumber RequireInfo {..} =
   if unModuleName riFullModuleName `Text.isInfixOf` unFileName filename
     then ""
-    else typesImport <> lineTag filename linenumber <> qualifiedImport
+    else typesImport <> renderLineTag (LineTag filename linenumber) <> qualifiedImport
   where
     types = maybe
       (Text.takeWhileEnd (/= '.') (unModuleName riFullModuleName))
