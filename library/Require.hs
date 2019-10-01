@@ -50,6 +50,15 @@ readFile' f = FileInput f <$> readFileText (toFilePath f)
 toFilePath :: FileName -> FilePath
 toFilePath = toString . unFileName
 
+fileInputLines :: FileInput -> [(LineTag, Text)]
+fileInputLines fi = zip lineTags contents
+  where
+    lineTags = LineTag (fiFileName fi) . LineNumber <$> [1..]
+    contents = Text.lines (fiContent fi)
+
+initialLineTag :: FileInput -> LineTag
+initialLineTag fi = LineTag (fiFileName fi) (LineNumber 1)
+
 requireMain :: IO ()
 requireMain = do
   CommandArguments inputFile _ outputFile <- getRecord "Require Haskell preprocessor" :: IO CommandArguments
@@ -70,27 +79,26 @@ run autorequire requiresFile inputFile outputFile = do
   let transformed =
         Require.transform
           autorequire
-          inputFile
+          input
           (foldMap fiContent requires)
-          (fiContent input)
   writeFileText (toFilePath outputFile) transformed
 
-transform :: Bool -> FileName -> Text -> Text -> Text
-transform autorequireEnabled filename imports input
-  | autorequireEnabled = transform' True filename imports input
-  | noAutorequire = transform' False filename imports input
-  | otherwise = transform' True filename imports input
-  where
-    noAutorequire = not (any ("autorequire" `Text.isPrefixOf`) $ lines input)
+transform :: Bool -> FileInput -> Text -> Text
+transform autorequireEnabled input =
+  transform'
+    (autorequireEnabled || autorequireDirective)
+    input
+ where
+   autorequireDirective =
+     any (\t -> "autorequire" `Text.isPrefixOf` t) $ Text.lines $ fiContent input
 
-transform' :: Bool -> FileName -> Text -> Text -> Text
-transform' shouldPrepend filename prepended input =
-  Text.lines input
-    & zip [1 ..]
+transform' :: Bool -> FileInput -> Text -> Text
+transform' shouldPrepend input prepended =
+  fileInputLines input
     & filter (\(_, t) -> not $ "autorequire" `Text.isPrefixOf` t)
     >>= prependAfterModuleLine
-    <&> (\(ln, text) -> maybe (text <> "\n") (renderImport filename (LineNumber ln)) $ Megaparsec.parseMaybe requireParser text)
-    & (renderLineTag (LineTag filename (LineNumber 1)) :)
+    <&> (\(ln, text) -> maybe (text <> "\n") (renderImport ln) $ Megaparsec.parseMaybe requireParser text)
+    & (renderLineTag (initialLineTag input) :)
     & Text.concat
   where
     enumeratedPrepend ln
@@ -124,11 +132,11 @@ renderLineTag (LineTag (FileName fn) (LineNumber ln)) =
     <> fn
     <> "\" #-}\n"
 
-renderImport :: FileName -> LineNumber -> RequireInfo -> Text
-renderImport filename linenumber RequireInfo {..} =
-  if unModuleName riFullModuleName `Text.isInfixOf` unFileName filename
+renderImport :: LineTag -> RequireInfo -> Text
+renderImport line@(LineTag (FileName fn) _) RequireInfo {..} =
+  if unModuleName riFullModuleName `Text.isInfixOf` fn
     then ""
-    else typesImport <> renderLineTag (LineTag filename linenumber) <> qualifiedImport
+    else typesImport <> renderLineTag line <> qualifiedImport
   where
     types = maybe
       (Text.takeWhileEnd (/= '.') (unModuleName riFullModuleName))
