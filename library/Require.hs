@@ -102,33 +102,32 @@ transform autorequireEnabled input requireInput =
 
 transform' :: FileInput -> Maybe FileInput -> Text
 transform' input prepended =
-  fileInputLines input
-    & filter (\(_, t) -> not $ "autorequire" `Text.isPrefixOf` t)
-    >>= prependAfterModuleLine
-    <&> (\(ln, text) -> maybe (text <> "\n") (renderImport ln) $ Megaparsec.parseMaybe requireParser text)
-    & (renderLineTag (initialLineTag input) :)
-    & Text.concat
+  flip evalState prependLineTag
+    $ process ""
+    $ fmap (second Text.stripEnd)
+    $ fileInputLines input
   where
     prependedLines = foldMap fileInputLines prepended
-    prependAfterModuleLine (ln, text)
-      | ("module" `Text.isPrefixOf` text)
-          && ("where" `Text.isSuffixOf`) text =
-        (ln, text) : prependedLines
-      | ("instance" `Text.isPrefixOf` text)
-          && ("where" `Text.isSuffixOf`) text =
-        [(ln, text)]
-      | ("data" `Text.isPrefixOf` text)
-          && ("where" `Text.isSuffixOf`) text =
-        [(ln, text)]
-      | ("class" `Text.isPrefixOf` text)
-          && ("where" `Text.isSuffixOf`) text =
-        [(ln, text)]
-      | not ("instance" `Text.isPrefixOf` text)
-          && not ("class" `Text.isPrefixOf` text)
-          && not ("data" `Text.isPrefixOf` text)
-          && ("where" `Text.isPrefixOf`) text =
-        (ln, text) : prependedLines
-      | otherwise = [(ln, text)]
+
+    prependLineTag, ignoreLineTag :: LineTag -> Text -> Text
+    prependLineTag = \lt -> (renderLineTag lt <>)
+    ignoreLineTag  = \_  -> id
+
+    process :: Text -> [(LineTag, Text)] -> State (LineTag -> Text -> Text) Text
+    process acc [] = pure acc
+    process acc ((_tag, "autorequire") : remainingLines) = do
+      put prependLineTag
+      acc' <- process acc prependedLines
+      put prependLineTag
+      res  <- process acc' remainingLines
+      pure res
+    process acc ((tag, line) : remainingLines) = do
+      tagPrep <- get
+      put ignoreLineTag
+      let acc' = tagPrep tag
+            $ maybe (line <> "\n") (renderImport tag)
+            $ Megaparsec.parseMaybe requireParser line
+      process (acc <> acc') remainingLines
 
 renderImport :: LineTag -> RequireInfo -> Text
 renderImport line@(LineTag (FileName fn) _) RequireInfo {..} =
