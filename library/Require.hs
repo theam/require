@@ -1,7 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Require where
 
 import qualified Data.Text as Text
+import Lens.Micro.Platform
 import Options.Generic
 import Relude
 import System.Directory
@@ -38,6 +40,16 @@ data CommandArguments
   deriving (Generic)
 
 instance ParseRecord CommandArguments
+
+
+type LineTagPrepend = LineTag -> Text -> Text
+
+data TransformState = TransformState
+  { _tstLineTagPrepend :: LineTagPrepend
+  , _tstHostModule     :: ModuleName
+  }
+
+makeLenses ''TransformState
 
 
 initialLineTag :: FileInput -> LineTag
@@ -102,28 +114,30 @@ transform autorequireEnabled input requireInput =
 
 transform' :: FileInput -> Maybe FileInput -> Text
 transform' input prepended =
-  flip evalState prependLineTag
+  flip evalState initialState
     $ process ""
     $ fmap (second Text.stripEnd)
     $ fileInputLines input
   where
-    prependedLines = foldMap fileInputLines prepended
+    initialState = TransformState
+      { _tstHostModule = ModuleName "Main"
+      , _tstLineTagPrepend = prependLineTag
+      }
 
-    prependLineTag, ignoreLineTag :: LineTag -> Text -> Text
+    prependLineTag, ignoreLineTag :: LineTagPrepend
     prependLineTag = \lt -> (renderLineTag lt <>)
     ignoreLineTag  = \_  -> id
 
-    process :: Text -> [(LineTag, Text)] -> State (LineTag -> Text -> Text) Text
+    process :: Text -> [(LineTag, Text)] -> State TransformState Text
     process acc [] = pure acc
     process acc ((_tag, "autorequire") : remainingLines) = do
-      put prependLineTag
-      acc' <- process acc prependedLines
-      put prependLineTag
+      tstLineTagPrepend .= prependLineTag
+      acc' <- process acc $ foldMap fileInputLines prepended
+      tstLineTagPrepend .= prependLineTag
       res  <- process acc' remainingLines
       pure res
     process acc ((tag, line) : remainingLines) = do
-      tagPrep <- get
-      put ignoreLineTag
+      tagPrep <- tstLineTagPrepend <<.= ignoreLineTag
       let acc' = tagPrep tag
             $ maybe (line <> "\n") (renderImport tag)
             $ Megaparsec.parseMaybe requireParser line
