@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -132,20 +133,31 @@ transform autorequireEnabled input prepended =
 
     process :: State TransformState (Maybe ModuleName) -> (LineTag, Text) -> State TransformState Text
     process getHostModule (tag, line) = do
-      let useTagPrep :: Text -> State TransformState Text
-          useTagPrep text = do
+      let useTagPrep text = do
             prep <- tstLineTagPrepend <<.= ignoreLineTag
             pure $ prep tag text
 
-      case Megaparsec.parseMaybe requireDirectiveParser line of
-        Nothing ->
-          useTagPrep (line <> "\n")
+      let lineWithAutorequire cond
+            | autorequireEnabled && cond = do
+                -- Call useTagPrep before processAutorequireContent because the
+                -- latter one modifies tstLineTagPrepend which the former one uses.
+                line' <- useTagPrep $ line <> "\n"
+                auto  <- processAutorequireContent
+                pure $ line' <> auto
+            | otherwise =
+                useTagPrep $ line <> "\n"
 
-        Just (ModuleDirective moduleName _hasWhere) -> do
+      case Megaparsec.parseMaybe requireDirectiveParser line of
+        Nothing -> do
+          hasModule <- isJust <$> use tstHostModule
+          let hasWhere = False -- TODO!
+          lineWithAutorequire $ hasModule && hasWhere
+
+        Just (ModuleDirective moduleName hasWhere) -> do
           -- If there is already a module name, don't overwrite it.
           -- TODO: Can we emit a warning in that case?
           tstHostModule %= (<|> Just moduleName)
-          useTagPrep (line <> "\n")
+          lineWithAutorequire hasWhere
 
         Just (RequireDirective ri) ->
           -- renderImport already prepends the line tag if necessary.
