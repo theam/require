@@ -121,10 +121,14 @@ run autorequire requiresFile inputFile outputFile = do
 
 transform :: Bool -> FileInput -> Maybe FileInput -> Text
 transform autorequireEnabled input prepended =
+  -- TODO:
+  --  * if the mapM overhead is too much maybe use a streaming library
+  --  * there is no need to concatenate the whole output in memory, a lazy text would be fine
+  --  * maybe we should check if tstAutorequired is set after processing
   fileInputLines input
-    & mapM (process (pure Nothing)) -- TODO: If the mapM overhead gets to much maybe use a streaming library.
+    & mapM (process (pure Nothing))
     & flip evalState initialState
-    & Text.concat       -- TODO: No need to concatenate the whole file in memory, we can create a lazy text here.
+    & Text.concat
   where
     initialState = TransformState
       { _tstLineTagPrepend = prependLineTag
@@ -164,7 +168,6 @@ transform autorequireEnabled input prepended =
 
         Just (ModuleDirective moduleName) -> do
           -- If there is already a module name, don't overwrite it.
-          -- TODO: Can we emit a warning in that case?
           tstHostModule %= (<|> Just moduleName)
           lineWithAutorequire hasWhere
 
