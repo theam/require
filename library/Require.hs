@@ -129,7 +129,7 @@ transform autorequireEnabled input requireInput =
 transform' :: FileInput -> Maybe FileInput -> Text
 transform' input prepended =
   fileInputLines input
-    & mapM process      -- TODO: If the mapM overhead gets to much maybe use a streaming library.
+    & mapM (process (pure Nothing)) -- TODO: If the mapM overhead gets to much maybe use a streaming library.
     & flip evalState initialState
     & Text.concat       -- TODO: No need to concatenate the whole file in memory, we can create a lazy text here.
   where
@@ -139,8 +139,8 @@ transform' input prepended =
       , _tstAutorequired   = False
       }
 
-    process :: (LineTag, Text) -> State TransformState Text
-    process (tag, line) = do
+    process :: State TransformState (Maybe ModuleName) -> (LineTag, Text) -> State TransformState Text
+    process getHostModule (tag, line) = do
       let useTagPrep :: Text -> State TransformState Text
           useTagPrep text = do
             prep <- tstLineTagPrepend <<.= ignoreLineTag
@@ -157,23 +157,30 @@ transform' input prepended =
           useTagPrep (line <> "\n")
 
         Just (RequireDirective ri) ->
-          useTagPrep (renderImport tag ri)
+          useTagPrep . renderImport tag ri =<< getHostModule
 
-        Just AutorequireDirective -> do
-          alreadyAutorequired <- tstAutorequired <<.= True
-          autorequireContent  <-
-            if | alreadyAutorequired  -> pure ""
-               | Nothing <- prepended -> pure ""
-               | Just pr <- prepended -> do
-                    tstLineTagPrepend .= prependLineTag
-                    Text.concat <$> mapM process (fileInputLines pr)
+        Just AutorequireDirective ->
+          processAutorequireContent
 
-          tstLineTagPrepend .= prependLineTag
-          pure autorequireContent
+    processAutorequireContent :: State TransformState Text
+    processAutorequireContent = do
+      alreadyAutorequired <- tstAutorequired <<.= True
+      autorequireContent  <-
+        if | alreadyAutorequired  -> pure ""
+           | Nothing <- prepended -> pure ""
+           | Just pr <- prepended -> do
+               tstLineTagPrepend .= prependLineTag
+               fileInputLines pr
+                 & mapM (process (use tstHostModule))
+                 & fmap Text.concat
 
-renderImport :: LineTag -> RequireInfo -> Text
-renderImport line@(LineTag (FileName fn) _) RequireInfo {..} =
-  if unModuleName riFullModuleName `Text.isInfixOf` fn
+      tstLineTagPrepend .= prependLineTag
+      pure autorequireContent
+
+
+renderImport :: LineTag -> RequireInfo -> Maybe ModuleName -> Text
+renderImport line RequireInfo {..} mhostModule =
+  if mhostModule == Just riFullModuleName
     then ""
     else typesImport <> renderLineTag line <> qualifiedImport
   where
@@ -192,6 +199,7 @@ renderImport line@(LineTag (FileName fn) _) RequireInfo {..} =
       , "as"
       , riModuleAlias
       ] <> "\n"
+
 
 requireDirectiveParser :: Parser RequireDirective
 requireDirectiveParser = do
