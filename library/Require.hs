@@ -118,16 +118,7 @@ run autorequire requiresFile inputFile outputFile = do
   writeFileText (toFilePath outputFile) transformed
 
 transform :: Bool -> FileInput -> Maybe FileInput -> Text
-transform autorequireEnabled input requireInput =
-  transform' input $ do
-    guard $ autorequireEnabled || autorequireDirective
-    requireInput
- where
-   autorequireDirective =
-     any (\t -> "autorequire" `Text.isPrefixOf` t) $ Text.lines $ fiContent input
-
-transform' :: FileInput -> Maybe FileInput -> Text
-transform' input prepended =
+transform autorequireEnabled input prepended =
   fileInputLines input
     & mapM (process (pure Nothing)) -- TODO: If the mapM overhead gets to much maybe use a streaming library.
     & flip evalState initialState
