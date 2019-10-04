@@ -31,7 +31,7 @@ data FileInput = FileInput
 type Parser = Megaparsec.Parsec Void Text
 
 data RequireDirective
-  = ModuleDirective ModuleName Bool
+  = ModuleDirective ModuleName
   | RequireDirective RequireInfo
   | AutorequireDirective
 
@@ -148,13 +148,14 @@ transform autorequireEnabled input prepended =
             | otherwise =
                 useTagPrep $ line <> "\n"
 
+      let hasWhere = False -- TODO!
+
       case Megaparsec.parseMaybe requireDirectiveParser line of
         Nothing -> do
           hasModule <- isJust <$> use tstHostModule
-          let hasWhere = False -- TODO!
           lineWithAutorequire $ hasModule && hasWhere
 
-        Just (ModuleDirective moduleName hasWhere) -> do
+        Just (ModuleDirective moduleName) -> do
           -- If there is already a module name, don't overwrite it.
           -- TODO: Can we emit a warning in that case?
           tstHostModule %= (<|> Just moduleName)
@@ -250,7 +251,9 @@ moduleDirectiveParser = do
   void $ Megaparsec.string "module"
   void $ Megaparsec.space1
   module' <- moduleNameParser
-  pure $ ModuleDirective module' False -- TODO!
+  -- Ignore anything further from the line.
+  void $ Megaparsec.takeWhileP Nothing (const True)
+  pure $ ModuleDirective module'
 
 moduleNameParser :: Parser ModuleName
 moduleNameParser =
