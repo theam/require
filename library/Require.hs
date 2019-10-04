@@ -157,7 +157,8 @@ transform' input prepended =
           useTagPrep (line <> "\n")
 
         Just (RequireDirective ri) ->
-          useTagPrep . renderImport tag ri =<< getHostModule
+          -- renderImport already prepends the line tag if necessary.
+          renderImport getHostModule tag ri
 
         Just AutorequireDirective ->
           processAutorequireContent
@@ -178,11 +179,16 @@ transform' input prepended =
       pure autorequireContent
 
 
-renderImport :: LineTag -> RequireInfo -> Maybe ModuleName -> Text
-renderImport line RequireInfo {..} mhostModule =
-  if mhostModule == Just riFullModuleName
-    then ""
-    else typesImport <> renderLineTag line <> qualifiedImport
+renderImport :: State TransformState (Maybe ModuleName) -> LineTag -> RequireInfo -> State TransformState Text
+renderImport getHostModule line RequireInfo {..} = do
+    mhostModule <- getHostModule
+    lineTagPrep <- use tstLineTagPrepend
+    let (res, prep) =
+          if mhostModule == Just riFullModuleName
+             then ("", prependLineTag)
+             else (typesImport <> renderLineTag line <> qualifiedImport, ignoreLineTag)
+    tstLineTagPrepend .= prep
+    pure $ lineTagPrep line res
   where
     types = maybe
       (Text.takeWhileEnd (/= '.') (unModuleName riFullModuleName))
