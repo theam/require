@@ -166,7 +166,6 @@ transform autorequireEnabled input prepended =
         Just AutorequireDirective ->
           processAutorequireContent
 
-    processAutorequireContent :: State TransformState Text
     processAutorequireContent = do
       alreadyAutorequired <- tstAutorequired <<.= True
       autorequireContent  <-
@@ -182,7 +181,7 @@ transform autorequireEnabled input prepended =
       pure autorequireContent
 
 
-renderImport :: State TransformState (Maybe ModuleName) -> LineTag -> RequireInfo -> State TransformState Text
+renderImport :: MonadState TransformState m => m (Maybe ModuleName) -> LineTag -> RequireInfo -> m Text
 renderImport getHostModule line RequireInfo {..} = do
     mhostModule <- getHostModule
     lineTagPrep <- use tstLineTagPrepend
