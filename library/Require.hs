@@ -4,6 +4,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Require where
 
+import qualified Data.Char as Char
 import qualified Data.Text as Text
 import Lens.Micro.Platform
 import Options.Generic
@@ -214,6 +215,7 @@ requireDirectiveParser = do
   directive <- asum
     [ RequireDirective <$> requireInfoParser
     , AutorequireDirective <$ Megaparsec.string "autorequire"
+    , moduleDirectiveParser
     ]
   Megaparsec.space
   skipLineComment
@@ -223,7 +225,7 @@ requireInfoParser :: Parser RequireInfo
 requireInfoParser = do
   void $ Megaparsec.string "require"
   void Megaparsec.space1
-  module' <- Megaparsec.some (Megaparsec.alphaNumChar <|> Megaparsec.punctuationChar)
+  module' <- moduleNameParser
   void Megaparsec.space
   alias' <- Megaparsec.try $ Megaparsec.option Nothing $ do
     void $ Megaparsec.string "as"
@@ -235,12 +237,27 @@ requireInfoParser = do
     t' <- Megaparsec.many (Megaparsec.alphaNumChar <|> Megaparsec.char ',' <|> Megaparsec.char ' ')
     void $ Megaparsec.char ')'
     return $ Just t'
+
   return
     RequireInfo
-      { riFullModuleName = ModuleName $ toText module',
-        riModuleAlias = maybe (Text.takeWhileEnd (/= '.') $ toText module') toText alias',
+      { riFullModuleName = module',
+        riModuleAlias = maybe (Text.takeWhileEnd (/= '.') $ unModuleName module') toText alias',
         riImportedTypes = (fmap Text.strip <$> Text.splitOn ",") . toText <$> types'
       }
+
+moduleDirectiveParser :: Parser RequireDirective
+moduleDirectiveParser = do
+  void $ Megaparsec.string "module"
+  void $ Megaparsec.space1
+  module' <- moduleNameParser
+  pure $ ModuleDirective module' False -- TODO!
+
+moduleNameParser :: Parser ModuleName
+moduleNameParser =
+  -- This parser is a superset of what makes a valid module name in Haskell
+  -- (e.g. we allow consecutive dots, lower-case first letters etc.)
+  fmap ModuleName $ Megaparsec.takeWhile1P Nothing $ \c ->
+    Char.isAlphaNum c || c == '.' || c == '_' || c == '\''
 
 skipLineComment :: Parser ()
 skipLineComment = void $ Megaparsec.optional $
