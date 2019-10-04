@@ -128,8 +128,9 @@ transform autorequireEnabled input requireInput =
 transform' :: FileInput -> Maybe FileInput -> Text
 transform' input prepended =
   fileInputLines input
-    & process ""
+    & mapM process      -- TODO: If the mapM overhead gets to much maybe use a streaming library.
     & flip evalState initialState
+    & Text.concat       -- TODO: No need to concatenate the whole file in memory, we can create a lazy text here.
   where
     initialState = TransformState
       { _tstLineTagPrepend = prependLineTag
@@ -137,15 +138,14 @@ transform' input prepended =
       , _tstModuleStarted  = False
       }
 
-    process :: Text -> [(LineTag, Text)] -> State TransformState Text
-    process acc [] = pure acc
-    process acc ((tag, line) : remainingLines) = do
+    process :: (LineTag, Text) -> State TransformState Text
+    process (tag, line) = do
       let useTagPrep :: Text -> State TransformState Text
           useTagPrep text = do
             prep <- tstLineTagPrepend <<.= ignoreLineTag
             pure $ prep tag text
 
-      line' <- case Megaparsec.parseMaybe requireDirectiveParser line of
+      case Megaparsec.parseMaybe requireDirectiveParser line of
         Nothing ->
           useTagPrep (line <> "\n")
 
@@ -159,12 +159,10 @@ transform' input prepended =
           useTagPrep (renderImport tag ri)
 
         Just AutorequireDirective -> do
-          tstLineTagPrepend .= prependLineTag
-          acc' <- process acc $ foldMap fileInputLines prepended
-          tstLineTagPrepend .= prependLineTag
-          pure acc'
-
-      process (acc <> line') remainingLines
+          tstLineTagPrepend  .= prependLineTag
+          autorequireContent <- fmap Text.concat $ mapM process $ foldMap fileInputLines prepended
+          tstLineTagPrepend  .= prependLineTag
+          pure autorequireContent
 
 renderImport :: LineTag -> RequireInfo -> Text
 renderImport line@(LineTag (FileName fn) _) RequireInfo {..} =
