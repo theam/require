@@ -27,6 +27,11 @@ data FileInput = FileInput
 
 type Parser = Megaparsec.Parsec Void Text
 
+data RequireDirective
+  = ModuleDirective ModuleName Bool
+  | RequireDirective RequireInfo
+  | AutorequireDirective
+
 data RequireInfo
   = RequireInfo
       { riFullModuleName :: ModuleName,
@@ -45,8 +50,9 @@ instance ParseRecord CommandArguments
 type LineTagPrepend = LineTag -> Text -> Text
 
 data TransformState = TransformState
-  { _tstLineTagPrepend :: LineTagPrepend
-  , _tstHostModule     :: ModuleName
+  { _tstLineTagPrepend :: !LineTagPrepend
+  , _tstHostModule     :: !(Maybe ModuleName)
+  , _tstModuleStarted  :: !Bool
   }
 
 makeLenses ''TransformState
@@ -61,6 +67,13 @@ advanceLineTag (LineTag fn ln) = LineTag fn (succ ln)
 renderLineTag :: LineTag -> Text
 renderLineTag (LineTag (FileName fn) (LineNumber ln)) =
   "{-# LINE " <> show ln <> " \"" <> fn <> "\" #-}\n"
+
+
+prependLineTag :: LineTagPrepend
+prependLineTag = (<>) . renderLineTag
+
+ignoreLineTag :: LineTagPrepend
+ignoreLineTag = const id
 
 
 findRequires :: IO (Maybe FileName)
@@ -114,34 +127,44 @@ transform autorequireEnabled input requireInput =
 
 transform' :: FileInput -> Maybe FileInput -> Text
 transform' input prepended =
-  flip evalState initialState
-    $ process ""
-    $ fmap (second Text.stripEnd)
-    $ fileInputLines input
+  fileInputLines input
+    & process ""
+    & flip evalState initialState
   where
     initialState = TransformState
-      { _tstHostModule = ModuleName "Main"
-      , _tstLineTagPrepend = prependLineTag
+      { _tstLineTagPrepend = prependLineTag
+      , _tstHostModule     = Nothing
+      , _tstModuleStarted  = False
       }
-
-    prependLineTag, ignoreLineTag :: LineTagPrepend
-    prependLineTag = \lt -> (renderLineTag lt <>)
-    ignoreLineTag  = \_  -> id
 
     process :: Text -> [(LineTag, Text)] -> State TransformState Text
     process acc [] = pure acc
-    process acc ((_tag, "autorequire") : remainingLines) = do
-      tstLineTagPrepend .= prependLineTag
-      acc' <- process acc $ foldMap fileInputLines prepended
-      tstLineTagPrepend .= prependLineTag
-      res  <- process acc' remainingLines
-      pure res
     process acc ((tag, line) : remainingLines) = do
-      tagPrep <- tstLineTagPrepend <<.= ignoreLineTag
-      let acc' = tagPrep tag
-            $ maybe (line <> "\n") (renderImport tag)
-            $ Megaparsec.parseMaybe requireParser line
-      process (acc <> acc') remainingLines
+      let useTagPrep :: Text -> State TransformState Text
+          useTagPrep text = do
+            prep <- tstLineTagPrepend <<.= ignoreLineTag
+            pure $ prep tag text
+
+      line' <- case Megaparsec.parseMaybe requireDirectiveParser line of
+        Nothing ->
+          useTagPrep (line <> "\n")
+
+        Just (ModuleDirective moduleName _hasWhere) -> do
+          -- If there is already a module name, don't overwrite it.
+          -- TODO: Can we emit a warning in that case?
+          tstHostModule %= (<|> Just moduleName)
+          useTagPrep (line <> "\n")
+
+        Just (RequireDirective ri) ->
+          useTagPrep (renderImport tag ri)
+
+        Just AutorequireDirective -> do
+          tstLineTagPrepend .= prependLineTag
+          acc' <- process acc $ foldMap fileInputLines prepended
+          tstLineTagPrepend .= prependLineTag
+          pure acc'
+
+      process (acc <> line') remainingLines
 
 renderImport :: LineTag -> RequireInfo -> Text
 renderImport line@(LineTag (FileName fn) _) RequireInfo {..} =
@@ -165,8 +188,18 @@ renderImport line@(LineTag (FileName fn) _) RequireInfo {..} =
       , riModuleAlias
       ] <> "\n"
 
-requireParser :: Parser RequireInfo
-requireParser = do
+requireDirectiveParser :: Parser RequireDirective
+requireDirectiveParser = do
+  directive <- asum
+    [ RequireDirective <$> requireInfoParser
+    , AutorequireDirective <$ Megaparsec.string "autorequire"
+    ]
+  Megaparsec.space
+  skipLineComment
+  pure directive
+
+requireInfoParser :: Parser RequireInfo
+requireInfoParser = do
   void $ Megaparsec.string "require"
   void Megaparsec.space1
   module' <- Megaparsec.some (Megaparsec.alphaNumChar <|> Megaparsec.punctuationChar)
@@ -181,14 +214,15 @@ requireParser = do
     t' <- Megaparsec.many (Megaparsec.alphaNumChar <|> Megaparsec.char ',' <|> Megaparsec.char ' ')
     void $ Megaparsec.char ')'
     return $ Just t'
-  void $ Megaparsec.option Nothing $ do
-    void Megaparsec.space
-    void $ Megaparsec.some (Megaparsec.char '-')
-    void $ Megaparsec.many (Megaparsec.alphaNumChar <|> Megaparsec.char ' ')
-    return Nothing
   return
     RequireInfo
       { riFullModuleName = ModuleName $ toText module',
         riModuleAlias = maybe (Text.takeWhileEnd (/= '.') $ toText module') toText alias',
         riImportedTypes = (fmap Text.strip <$> Text.splitOn ",") . toText <$> types'
       }
+
+skipLineComment :: Parser ()
+skipLineComment = void $ Megaparsec.optional $
+  Megaparsec.string "--"
+    *> (Megaparsec.space1 <|> void Megaparsec.alphaNumChar <|> Megaparsec.eof)
+    *> Megaparsec.takeWhileP Nothing (const True)
