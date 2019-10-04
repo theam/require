@@ -148,7 +148,14 @@ transform autorequireEnabled input prepended =
             | otherwise =
                 useTagPrep $ line <> "\n"
 
-      let hasWhere = False -- TODO!
+      let hasWhere =
+            -- TODO: This assumes that comments have whitespace before them and
+            -- that `where` has whitespace before it. But
+            --    module Foo (abc)where--something else
+            -- is valid in Haskell.
+            Text.words line
+              & takeWhile (not . ("--" `Text.isPrefixOf`))
+              & elem "where"
 
       case Megaparsec.parseMaybe requireDirectiveParser line of
         Nothing -> do
