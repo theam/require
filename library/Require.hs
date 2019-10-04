@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Require where
 
@@ -52,7 +53,7 @@ type LineTagPrepend = LineTag -> Text -> Text
 data TransformState = TransformState
   { _tstLineTagPrepend :: !LineTagPrepend
   , _tstHostModule     :: !(Maybe ModuleName)
-  , _tstModuleStarted  :: !Bool
+  , _tstAutorequired   :: !Bool
   }
 
 makeLenses ''TransformState
@@ -135,7 +136,7 @@ transform' input prepended =
     initialState = TransformState
       { _tstLineTagPrepend = prependLineTag
       , _tstHostModule     = Nothing
-      , _tstModuleStarted  = False
+      , _tstAutorequired   = False
       }
 
     process :: (LineTag, Text) -> State TransformState Text
@@ -159,9 +160,15 @@ transform' input prepended =
           useTagPrep (renderImport tag ri)
 
         Just AutorequireDirective -> do
-          tstLineTagPrepend  .= prependLineTag
-          autorequireContent <- fmap Text.concat $ mapM process $ foldMap fileInputLines prepended
-          tstLineTagPrepend  .= prependLineTag
+          alreadyAutorequired <- tstAutorequired <<.= True
+          autorequireContent  <-
+            if | alreadyAutorequired  -> pure ""
+               | Nothing <- prepended -> pure ""
+               | Just pr <- prepended -> do
+                    tstLineTagPrepend .= prependLineTag
+                    Text.concat <$> mapM process (fileInputLines pr)
+
+          tstLineTagPrepend .= prependLineTag
           pure autorequireContent
 
 renderImport :: LineTag -> RequireInfo -> Text
