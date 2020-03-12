@@ -1,5 +1,5 @@
 name: require
-version: "0.4.3"
+version: "0.4.4"
 github: "theam/require"
 license: Apache-2.0
 author: "The Agile Monkeys"
@@ -11,12 +11,12 @@ category: Other
 license-file: LICENSE.md
 
 extra-source-files:
-- CHANGELOG.md
-- LICENSE.md
-- package.yaml
-- README.md
-- stack.yaml
-- Requires
+  - CHANGELOG.md
+  - LICENSE.md
+  - package.yaml
+  - README.md
+  - stack.yaml
+  - Requires
 
 ghc-options: -Wall
 
@@ -45,42 +45,42 @@ executables:
     source-dirs: executable/Require/
     main: Main.hs
     dependencies:
-    - require
+      - require
     ghc-options:
-    - -rtsopts
-    - -threaded
-    - -with-rtsopts=-N
+      - -rtsopts
+      - -threaded
+      - -with-rtsopts=-N
   autorequirepp:
     source-dirs: executable/AutoRequire/
     main: Main.hs
     dependencies:
       - require
     ghc-options:
-    - -rtsopts
-    - -threaded
-    - -with-rtsopts=-N
+      - -rtsopts
+      - -threaded
+      - -with-rtsopts=-N
 
 benchmarks:
   require-benchmarks:
     source-dirs: benchmark
     main: Main.hs
     dependencies:
-    - require
-    - criterion
+      - require
+      - criterion
     ghc-options:
-    - -rtsopts
-    - -threaded
-    - -with-rtsopts=-N
+      - -rtsopts
+      - -threaded
+      - -with-rtsopts=-N
 
 tests:
   require-test-suite:
     source-dirs: test-suite
     main: Main.hs
     dependencies:
-    - require
-    - tasty
-    - tasty-hspec
+      - require
+      - tasty
+      - tasty-hspec
     ghc-options:
-    - -rtsopts
-    - -threaded
-    - -with-rtsopts=-N
+      - -rtsopts
+      - -threaded
+      - -with-rtsopts=-N

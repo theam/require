@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.1.
+-- This file has been generated from package.yaml by hpack version 0.31.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a267003ca98aa55c16263ffd29a841cabb53afd4596f212390bd1d12a78b9a69
+-- hash: b77d14c51d3de17cc4f294b79c480b2e507a9fb4764fa8e2db1a9efd84620ecc
 
 name:           require
-version:        0.4.2
+version:        0.4.4
 synopsis:       Scrap your qualified import clutter
 description:    See <https://theam.github.io/require>
 category:       Other
