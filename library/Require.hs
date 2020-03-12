@@ -34,19 +34,15 @@ findRequires = do
 requireMain :: IO ()
 requireMain = do
   CommandArguments _ inputFile outputFile <- getRecord "Require Haskell preprocessor" :: IO CommandArguments
-  requiresFile <- findRequires
-  case requiresFile of
-    Nothing -> die "There is no Requires file in the system"
-    Just x -> do
-      file <- readFile $ toString x
-      content <- readFile (toString inputFile)
-      writeFile
-        (toString outputFile)
-        (Require.transform
-          False
-          (Require.FileName inputFile)
-          file
-          content)
+  content <- readFile (toString inputFile)
+  writeFile
+    (toString outputFile)
+    ( Require.transform
+        False
+        (Require.FileName inputFile)
+        ""
+        content
+    )
 
 autorequireMain :: IO ()
 autorequireMain = do
