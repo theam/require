@@ -94,3 +94,18 @@ spec = parallel $ do
           (Require.FileInput (Require.FileName "src/Foo/Bar.hs") fileInput)
           (Just $ Require.FileInput (Require.FileName "Requires") requireInput)
     toString actual `shouldNotContain` notExpected
+  it "surrounds the contents of the Requires file with LINE pragmas" $ do
+    let fileInput = Text.unlines [ "module Main where", "import B" ]
+    let requireInput = Text.unlines [ "import A" ]
+    let expected = Text.unlines
+          [ "{-# LINE \"Foo.hs\" 1 #-}"
+          , "module Main where"
+          , "{-# LINE \"Requires\" 1 #-}"
+          , "import A"
+          , "{-# LINE \"Foo.hs\" 2 #-}"
+          , "import B"
+          ]
+    let actual = Require.transform True
+          (Require.FileInput (Require.FileName "Foo.hs") fileInput)
+          (Just $ Require.FileInput (Require.FileName "Requires") requireInput)
+    actual `shouldBe` expected
