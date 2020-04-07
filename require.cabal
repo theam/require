@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b77d14c51d3de17cc4f294b79c480b2e507a9fb4764fa8e2db1a9efd84620ecc
+-- hash: 48b2e6eac2a613e185e3cb321b1ce809c8a81745bac0b4fb5a80d99acd77bdc1
 
 name:           require
 version:        0.4.4
@@ -47,8 +47,8 @@ library
     , inliterate
     , megaparsec >=7 && <8
     , optparse-generic
+    , relude
     , text >=1.2.3.0 && <2
-    , universum >=1.2.0 && <2
   default-language: Haskell2010
 
 executable autorequirepp
@@ -66,9 +66,9 @@ executable autorequirepp
     , inliterate
     , megaparsec >=7 && <8
     , optparse-generic
+    , relude
     , require
     , text >=1.2.3.0 && <2
-    , universum >=1.2.0 && <2
   default-language: Haskell2010
 
 executable requirepp
@@ -86,9 +86,9 @@ executable requirepp
     , inliterate
     , megaparsec >=7 && <8
     , optparse-generic
+    , relude
     , require
     , text >=1.2.3.0 && <2
-    , universum >=1.2.0 && <2
   default-language: Haskell2010
 
 test-suite require-test-suite
@@ -107,11 +107,11 @@ test-suite require-test-suite
     , inliterate
     , megaparsec >=7 && <8
     , optparse-generic
+    , relude
     , require
     , tasty
     , tasty-hspec
     , text >=1.2.3.0 && <2
-    , universum >=1.2.0 && <2
   default-language: Haskell2010
 
 benchmark require-benchmarks
@@ -131,7 +131,7 @@ benchmark require-benchmarks
     , inliterate
     , megaparsec >=7 && <8
     , optparse-generic
+    , relude
     , require
     , text >=1.2.3.0 && <2
-    , universum >=1.2.0 && <2
   default-language: Haskell2010
