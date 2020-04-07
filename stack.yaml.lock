@@ -3,17 +3,10 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages:
-- completed:
-    hackage: universum-1.2.0@sha256:30480f0c58d5cf14c4792c231f28fd0e24c182a0a0930db8e5d7b841a5735be5,5129
-    pantry-tree:
-      size: 3231
-      sha256: f8ffc5d7057ccd3350cf5daff095d5848cf82e8346559a5a1ac64b073464e994
-  original:
-    hackage: universum-1.2.0
+packages: []
 snapshots:
 - completed:
-    size: 494116
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/13/3.yaml
-    sha256: d9b0ca796c677a8fd429009d09afc6c9efe260b8789c264ce11641e3e727466f
-  original: lts-13.3
+    size: 524996
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/27.yaml
+    sha256: 7ea31a280c56bf36ff591a7397cc384d0dff622e7f9e4225b47d8980f019a0f0
+  original: lts-14.27
