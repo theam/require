@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 44a5e193fad05b317af4273b8f9526cd940ca95b5f39734956677cc30b8ed3e8
+-- hash: f6bc9c2371f0a167829d05ea4cb94a51e5d3ca3e2bc863a82685611213b5cb05
 
 name:           require
 version:        0.4.6
@@ -46,7 +46,6 @@ library
     , directory
     , inliterate
     , megaparsec >=7 && <8
-    , microlens-platform
     , optparse-generic
     , relude
     , text >=1.2.3.0 && <2
@@ -66,7 +65,6 @@ executable autorequirepp
     , directory
     , inliterate
     , megaparsec >=7 && <8
-    , microlens-platform
     , optparse-generic
     , relude
     , require
@@ -87,7 +85,6 @@ executable requirepp
     , directory
     , inliterate
     , megaparsec >=7 && <8
-    , microlens-platform
     , optparse-generic
     , relude
     , require
@@ -109,7 +106,6 @@ test-suite require-test-suite
     , directory
     , inliterate
     , megaparsec >=7 && <8
-    , microlens-platform
     , optparse-generic
     , relude
     , require
@@ -134,7 +130,6 @@ benchmark require-benchmarks
     , directory
     , inliterate
     , megaparsec >=7 && <8
-    , microlens-platform
     , optparse-generic
     , relude
     , require

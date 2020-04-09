@@ -1,12 +1,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE TemplateHaskell #-}
 module Require where
 
 import qualified Data.Char as Char
 import qualified Data.Text as Text
-import Lens.Micro.Platform
 import Options.Generic
 import Relude
 import System.Directory
@@ -53,12 +51,10 @@ instance ParseRecord CommandArguments
 type LineTagPrepend = LineTag -> Text -> Text
 
 data TransformState = TransformState
-  { _tstLineTagPrepend :: !LineTagPrepend
-  , _tstHostModule     :: !(Maybe ModuleName)
-  , _tstAutorequired   :: !Bool
+  { tstLineTagPrepend :: !LineTagPrepend
+  , tstHostModule     :: !(Maybe ModuleName)
+  , tstAutorequired   :: !Bool
   }
-
-makeLenses ''TransformState
 
 
 initialLineTag :: FileInput -> LineTag
@@ -131,15 +127,16 @@ transform autorequireEnabled input prepended =
     & Text.concat
   where
     initialState = TransformState
-      { _tstLineTagPrepend = prependLineTag
-      , _tstHostModule     = Nothing
-      , _tstAutorequired   = False
+      { tstLineTagPrepend = prependLineTag
+      , tstHostModule     = Nothing
+      , tstAutorequired   = False
       }
 
     process :: State TransformState (Maybe ModuleName) -> (LineTag, Text) -> State TransformState Text
     process getHostModule (tag, line) = do
       let useTagPrep text = do
-            prep <- tstLineTagPrepend <<.= ignoreLineTag
+            prep <- gets tstLineTagPrepend
+            modify $ \s -> s { tstLineTagPrepend = ignoreLineTag }
             pure $ prep tag text
 
       let lineWithAutorequire cond
@@ -163,12 +160,12 @@ transform autorequireEnabled input prepended =
 
       case Megaparsec.parseMaybe requireDirectiveParser line of
         Nothing -> do
-          hasModule <- isJust <$> use tstHostModule
+          hasModule <- gets $ isJust . tstHostModule
           lineWithAutorequire $ hasModule && hasWhere
 
         Just (ModuleDirective moduleName) -> do
           -- If there is already a module name, don't overwrite it.
-          tstHostModule %= (<|> Just moduleName)
+          modify $ \s -> s { tstHostModule = tstHostModule s <|> Just moduleName }
           lineWithAutorequire hasWhere
 
         Just (RequireDirective ri) ->
@@ -179,29 +176,33 @@ transform autorequireEnabled input prepended =
           processAutorequireContent
 
     processAutorequireContent = do
-      alreadyAutorequired <- tstAutorequired <<.= True
+      alreadyAutorequired <- gets tstAutorequired
       autorequireContent  <-
         if | alreadyAutorequired  -> pure ""
            | Nothing <- prepended -> pure ""
            | Just pr <- prepended -> do
-               tstLineTagPrepend .= prependLineTag
+               modify $ \s -> s
+                 { tstLineTagPrepend = prependLineTag
+                 , tstAutorequired = True
+                 }
+
                fileInputLines pr
-                 & mapM (process (use tstHostModule))
+                 & mapM (process (gets tstHostModule))
                  & fmap Text.concat
 
-      tstLineTagPrepend .= prependLineTag
+      modify $ \s -> s { tstLineTagPrepend = prependLineTag }
       pure autorequireContent
 
 
 renderImport :: MonadState TransformState m => m (Maybe ModuleName) -> LineTag -> RequireInfo -> m Text
 renderImport getHostModule line RequireInfo {..} = do
     mhostModule <- getHostModule
-    lineTagPrep <- use tstLineTagPrepend
+    lineTagPrep <- gets tstLineTagPrepend
     let (res, prep) =
           if mhostModule == Just riFullModuleName
              then ("", prependLineTag)
              else (typesImport <> renderLineTag line <> qualifiedImport, ignoreLineTag)
-    tstLineTagPrepend .= prep
+    modify $ \s -> s { tstLineTagPrepend = prep }
     pure $ lineTagPrep line res
   where
     types = maybe
