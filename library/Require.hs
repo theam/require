@@ -3,32 +3,14 @@
 {-# LANGUAGE MultiWayIf #-}
 module Require where
 
-import qualified Data.Char as Char
 import qualified Data.Text as Text
 import Options.Generic
 import Relude
 import System.Directory
 import qualified Require.File as File
-import qualified Text.Megaparsec as Megaparsec
-import qualified Text.Megaparsec.Char as Megaparsec
+import qualified Require.Parser as Parser
+import Require.Types
 
-newtype ModuleName = ModuleName { unModuleName :: Text }
-  deriving (Eq, Show)
-
-type Parser = Megaparsec.Parsec Void Text
-
-data RequireDirective
-  = ModuleDirective ModuleName
-  | RequireDirective RequireInfo
-  | AutorequireDirective
-
-data RequireInfo
-  = RequireInfo
-      { riFullModuleName :: ModuleName,
-        riModuleAlias :: Text,
-        riImportedTypes :: Maybe [Text]
-      }
-  deriving (Show)
 
 data CommandArguments
   = CommandArguments Text Text Text
@@ -132,7 +114,7 @@ transform autorequireEnabled input prepended =
               & takeWhile (not . ("--" `Text.isPrefixOf`))
               & elem "where"
 
-      case Megaparsec.parseMaybe requireDirectiveParser line of
+      case Parser.parseMaybe Parser.requireDirective line of
         Nothing -> do
           hasModule <- gets $ isJust . tstHostModule
           lineWithAutorequire $ hasModule && hasWhere
@@ -199,61 +181,3 @@ renderImport getHostModule line RequireInfo {..} = do
       , "as"
       , riModuleAlias
       ] <> "\n"
-
-
-requireDirectiveParser :: Parser RequireDirective
-requireDirectiveParser = do
-  directive <- asum
-    [ RequireDirective <$> requireInfoParser
-    , AutorequireDirective <$ Megaparsec.string "autorequire"
-    , moduleDirectiveParser
-    ]
-  Megaparsec.space
-  skipLineComment
-  pure directive
-
-requireInfoParser :: Parser RequireInfo
-requireInfoParser = do
-  void $ Megaparsec.string "require"
-  void Megaparsec.space1
-  module' <- moduleNameParser
-  void Megaparsec.space
-  alias' <- Megaparsec.try $ Megaparsec.option Nothing $ do
-    void $ Megaparsec.string "as"
-    void Megaparsec.space1
-    Just <$> Megaparsec.some Megaparsec.alphaNumChar
-  void Megaparsec.space
-  types' <- Megaparsec.option Nothing $ do
-    void $ Megaparsec.char '('
-    t' <- Megaparsec.many (Megaparsec.alphaNumChar <|> Megaparsec.char ',' <|> Megaparsec.char ' ')
-    void $ Megaparsec.char ')'
-    return $ Just t'
-
-  return
-    RequireInfo
-      { riFullModuleName = module',
-        riModuleAlias = maybe (Text.takeWhileEnd (/= '.') $ unModuleName module') toText alias',
-        riImportedTypes = (fmap Text.strip <$> Text.splitOn ",") . toText <$> types'
-      }
-
-moduleDirectiveParser :: Parser RequireDirective
-moduleDirectiveParser = do
-  void $ Megaparsec.string "module"
-  void $ Megaparsec.space1
-  module' <- moduleNameParser
-  -- Ignore anything further from the line.
-  void $ Megaparsec.takeWhileP Nothing (const True)
-  pure $ ModuleDirective module'
-
-moduleNameParser :: Parser ModuleName
-moduleNameParser =
-  -- This parser is a superset of what makes a valid module name in Haskell
-  -- (e.g. we allow consecutive dots, lower-case first letters etc.)
-  fmap ModuleName $ Megaparsec.takeWhile1P Nothing $ \c ->
-    Char.isAlphaNum c || c == '.' || c == '_' || c == '\''
-
-skipLineComment :: Parser ()
-skipLineComment = void $ Megaparsec.optional $
-  Megaparsec.string "--"
-    *> (Megaparsec.space1 <|> void Megaparsec.alphaNumChar <|> Megaparsec.eof)
-    *> Megaparsec.takeWhileP Nothing (const True)
