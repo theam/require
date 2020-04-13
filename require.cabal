@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 839661b130c944d411d6ff8705f50e12ac597c04eb74d07687e3ccdedcb919d0
+-- hash: b904a68bbda80f4dff48e4630455d7b4ba84eb12b613a6201d84db6ff259a4f5
 
 name:           require
 version:        0.4.7
@@ -36,6 +36,7 @@ library
       Require
       Require.File
       Require.Parser
+      Require.Transform
       Require.Types
   other-modules:
       Paths_require

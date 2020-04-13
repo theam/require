@@ -1,7 +1,7 @@
 import qualified Data.Text as Text
 import Relude
-import qualified Require
 import qualified Require.File as File
+import qualified Require.Transform as Require
 import qualified Test.Tasty
 import Test.Tasty.Hspec
 
