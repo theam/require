@@ -8,23 +8,12 @@ import qualified Data.Text as Text
 import Options.Generic
 import Relude
 import System.Directory
+import qualified Require.File as File
 import qualified Text.Megaparsec as Megaparsec
 import qualified Text.Megaparsec.Char as Megaparsec
 
-newtype FileName = FileName {unFileName :: Text}
-
 newtype ModuleName = ModuleName { unModuleName :: Text }
   deriving (Eq, Show)
-
-newtype LineNumber = LineNumber Int
-  deriving (Enum)
-
-data LineTag = LineTag !FileName !LineNumber
-
-data FileInput = FileInput
-  { fiFileName :: FileName,
-    fiContent :: Text
-  }
 
 type Parser = Megaparsec.Parsec Void Text
 
@@ -48,7 +37,7 @@ data CommandArguments
 instance ParseRecord CommandArguments
 
 
-type LineTagPrepend = LineTag -> Text -> Text
+type LineTagPrepend = File.LineTag -> Text -> Text
 
 data TransformState = TransformState
   { tstLineTagPrepend :: !LineTagPrepend
@@ -57,14 +46,8 @@ data TransformState = TransformState
   }
 
 
-initialLineTag :: FileInput -> LineTag
-initialLineTag fi = LineTag (fiFileName fi) (LineNumber 1)
-
-advanceLineTag :: LineTag -> LineTag
-advanceLineTag (LineTag fn ln) = LineTag fn (succ ln)
-
-renderLineTag :: LineTag -> Text
-renderLineTag (LineTag (FileName fn) (LineNumber ln)) =
+renderLineTag :: File.LineTag -> Text
+renderLineTag (File.LineTag (File.Name fn) (File.LineNumber ln)) =
   "{-# LINE " <> show ln <> " \"" <> fn <> "\" #-}\n"
 
 
@@ -75,30 +58,18 @@ ignoreLineTag :: LineTagPrepend
 ignoreLineTag = const id
 
 
-findRequires :: IO (Maybe FileName)
+findRequires :: IO (Maybe File.Name)
 findRequires = do
   currentDir <- getCurrentDirectory
   files <- getDirectoryContents currentDir
   let textFiles = fmap toText files
-  return $ FileName . head <$> nonEmpty (filter (Text.isSuffixOf "Requires") textFiles)
-
-readFile' :: FileName -> IO FileInput
-readFile' f = FileInput f <$> readFileText (toFilePath f)
-
-toFilePath :: FileName -> FilePath
-toFilePath = toString . unFileName
-
-fileInputLines :: FileInput -> [(LineTag, Text)]
-fileInputLines fi = zip lineTags contents
-  where
-    lineTags = iterate advanceLineTag (initialLineTag fi)
-    contents = Text.lines (fiContent fi)
+  return $ File.Name . head <$> nonEmpty (filter (Text.isSuffixOf "Requires") textFiles)
 
 
 requireMain :: IO ()
 requireMain = do
   CommandArguments inputFile _ outputFile <- getRecord "Require Haskell preprocessor" :: IO CommandArguments
-  run False Nothing (FileName inputFile) (FileName outputFile)
+  run False Nothing (File.Name inputFile) (File.Name outputFile)
 
 autorequireMain :: IO ()
 autorequireMain = do
@@ -106,22 +77,22 @@ autorequireMain = do
   requiresFile <- findRequires
   case requiresFile of
     Nothing -> die "There is no Requires file in the system"
-    Just _  -> run True requiresFile (FileName inputFile) (FileName outputFile)
+    Just _  -> run True requiresFile (File.Name inputFile) (File.Name outputFile)
 
-run :: Bool -> Maybe FileName -> FileName -> FileName -> IO ()
+run :: Bool -> Maybe File.Name -> File.Name -> File.Name -> IO ()
 run autorequire requiresFile inputFile outputFile = do
-  input <- readFile' inputFile
-  requires <- traverse readFile' requiresFile
+  input <- File.read inputFile
+  requires <- traverse File.read requiresFile
   let transformed = Require.transform autorequire input requires
-  writeFileText (toFilePath outputFile) transformed
+  File.write outputFile transformed
 
-transform :: Bool -> FileInput -> Maybe FileInput -> Text
+transform :: Bool -> File.Input -> Maybe File.Input -> Text
 transform autorequireEnabled input prepended =
   -- TODO:
   --  * if the mapM overhead is too much maybe use a streaming library
   --  * there is no need to concatenate the whole output in memory, a lazy text would be fine
   --  * maybe we should check if tstAutorequired is set after processing
-  fileInputLines input
+  File.inputLines input
     & mapM (process (pure Nothing))
     & flip evalState initialState
     & Text.concat
@@ -132,7 +103,10 @@ transform autorequireEnabled input prepended =
       , tstAutorequired   = False
       }
 
-    process :: State TransformState (Maybe ModuleName) -> (LineTag, Text) -> State TransformState Text
+    process
+      :: State TransformState (Maybe ModuleName)
+      -> (File.LineTag, Text)
+      -> State TransformState Text
     process getHostModule (tag, line) = do
       let useTagPrep text = do
             prep <- gets tstLineTagPrepend
@@ -186,7 +160,7 @@ transform autorequireEnabled input prepended =
                  , tstAutorequired = True
                  }
 
-               fileInputLines pr
+               File.inputLines pr
                  & mapM (process (gets tstHostModule))
                  & fmap Text.concat
 
@@ -194,7 +168,12 @@ transform autorequireEnabled input prepended =
       pure autorequireContent
 
 
-renderImport :: MonadState TransformState m => m (Maybe ModuleName) -> LineTag -> RequireInfo -> m Text
+renderImport
+  :: MonadState TransformState m
+  => m (Maybe ModuleName)
+  -> File.LineTag
+  -> RequireInfo
+  -> m Text
 renderImport getHostModule line RequireInfo {..} = do
     mhostModule <- getHostModule
     lineTagPrep <- gets tstLineTagPrepend
