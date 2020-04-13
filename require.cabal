@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b904a68bbda80f4dff48e4630455d7b4ba84eb12b613a6201d84db6ff259a4f5
+-- hash: ceeb2f9c5a160393a1fd86ca01c63c4d957d256ae92501abfd87e3d415f5c686
 
 name:           require
-version:        0.4.7
+version:        0.4.8
 synopsis:       Scrap your qualified import clutter
 description:    See <https://theam.github.io/require>
 category:       Other
