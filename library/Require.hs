@@ -4,6 +4,7 @@ import qualified Data.Text as Text
 import Options.Generic
 import Relude
 import System.Directory
+import qualified Require.Error as Error
 import qualified Require.File as File
 import Require.Transform
 import Require.Types
@@ -41,5 +42,5 @@ run autoMode inputFile outputFile = do
   input <- File.read inputFile
   autoInput <- traverse File.read autoMode
   case transform autoInput input of
-    Left err -> die err
+    Left err -> die (Error.describe err)
     Right tr -> File.write outputFile tr

@@ -5,6 +5,7 @@ import Control.Category ((>>>))
 import Control.Monad.Except
 import qualified Data.Text as Text
 import Relude
+import Require.Error (Error(..))
 import qualified Require.File as File
 import qualified Require.Parser as Parser
 import Require.Types
@@ -20,7 +21,7 @@ data TransformState = TransformState
 
 
 type TransformM =
-  ExceptT String
+  ExceptT Error
     (State TransformState)
 
 
@@ -36,7 +37,7 @@ ignoreLineTag :: LineTagPrepend
 ignoreLineTag = const id
 
 
-transform :: AutorequireMode File.Input -> File.Input -> Either String Text
+transform :: AutorequireMode File.Input -> File.Input -> Either Error Text
 transform autorequire =
   -- TODO:
   --  * if the mapM overhead is too much maybe use a streaming library
@@ -69,12 +70,13 @@ process filterImports (tag, line) = do
                 line' <- if isDirective then pure "" else useTagPrep (line <> "\n")
                 auto  <- processAutorequireContent autoContent
                 pure $ line' <> auto
+
           AutorequireOnDirective (Just autoContent)
-            | isDirective -> do
-                processAutorequireContent autoContent
+            | isDirective -> processAutorequireContent autoContent
+
           AutorequireOnDirective Nothing
-            | isDirective ->
-                throwError "Found an `autorequire` directive but no `Requires` file was found."
+            | isDirective -> throwError MissingRequiresFile
+
           _ | isDirective -> pure ""
             | otherwise   -> useTagPrep $ line <> "\n"
 

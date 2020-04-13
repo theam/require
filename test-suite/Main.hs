@@ -1,5 +1,6 @@
 import qualified Data.Text as Text
 import Relude
+import qualified Require.Error as Error
 import qualified Require.File as File
 import qualified Require.Transform as Require
 import Require.Types
@@ -17,7 +18,7 @@ spec = parallel $ do
         case Require.transform autoMode fileInput of
           Left err -> do
             -- sadly expectationFailure is not polymorphic in its return type
-            expectationFailure $ "Tranform failed: " ++ err
+            expectationFailure $ "Tranform failed: " ++ show err
             pure $ error "expectationFailure should have thrown"
           Right tr ->
             pure tr
@@ -103,24 +104,6 @@ spec = parallel $ do
       actual `shouldSatisfy` elem expected2
 
   describe "require-mode" $ do
-    it "respects autorequire directives" $ do
-      let fileInput = Text.unlines [ "module Main where", "autorequire", "import B" ]
-      let requireInput = Text.unlines [ "import A" ]
-      actual <- transformLines
-            (AutorequireOnDirective $ Just $ File.Input (File.Name "Requires") requireInput)
-            (File.Input (File.Name "src/Foo/Bar.hs") fileInput)
-      actual `shouldSatisfy` elem "module Main where"
-      actual `shouldSatisfy` elem "import A"
-      actual `shouldSatisfy` elem "import B"
-      actual `shouldSatisfy` elemN 0 "autorequire"
-    it "ignores a second autorequire directive" $ do
-      let fileInput = Text.unlines [ "autorequire", "autorequire" ]
-      let requireInput = Text.unlines [ "import A" ]
-      actual <- transformLines
-            (AutorequireOnDirective $ Just $ File.Input (File.Name "Requires") requireInput)
-            (File.Input (File.Name "src/Foo/Bar.hs") fileInput)
-      actual `shouldSatisfy` elemN 1 "import A"
-      actual `shouldSatisfy` elemN 0 "autorequire"
     it "keeps requires where the module is a substring of the filename" $ do
       -- Test case for https://github.com/theam/require/issues/20
       let fileInput = Text.unlines [ "module FooTest where", "require Foo" ]
@@ -131,6 +114,32 @@ spec = parallel $ do
             (File.Input (File.Name "FooTests.hs") fileInput)
       actual `shouldSatisfy` elem expected1
       actual `shouldSatisfy` elem expected2
+
+    describe "autorequire directive" $ do
+      it "respects them" $ do
+        let fileInput = Text.unlines [ "module Main where", "autorequire", "import B" ]
+        let requireInput = Text.unlines [ "import A" ]
+        actual <- transformLines
+              (AutorequireOnDirective $ Just $ File.Input (File.Name "Requires") requireInput)
+              (File.Input (File.Name "src/Foo/Bar.hs") fileInput)
+        actual `shouldSatisfy` elem "module Main where"
+        actual `shouldSatisfy` elem "import A"
+        actual `shouldSatisfy` elem "import B"
+        actual `shouldSatisfy` elemN 0 "autorequire"
+      it "ignores them after the first one" $ do
+        let fileInput = Text.unlines [ "autorequire", "autorequire" ]
+        let requireInput = Text.unlines [ "import A" ]
+        actual <- transformLines
+              (AutorequireOnDirective $ Just $ File.Input (File.Name "Requires") requireInput)
+              (File.Input (File.Name "src/Foo/Bar.hs") fileInput)
+        actual `shouldSatisfy` elemN 1 "import A"
+        actual `shouldSatisfy` elemN 0 "autorequire"
+      it "throws an error if no requires file is provided" $ do
+        let fileInput = "autorequire"
+        let actual = Require.transform
+              (AutorequireOnDirective Nothing)
+              (File.Input (File.Name "Foo.hs") fileInput)
+        actual `shouldBe` Left Error.MissingRequiresFile
 
   describe "autorequire-mode" $ do
     describe "inclusion after module directive" $ do
