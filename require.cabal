@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b5fbb89313fc25a016996a3226294577eb819df7a681a9f5f08459446898196f
+-- hash: cc313f3532ad0cb7e84807d8057036999f2bc476e96ececc26a5afbc9375191a
 
 name:           require
 version:        0.4.8
@@ -49,6 +49,7 @@ library
     , bytestring >=0.10 && <0.11
     , directory
     , megaparsec >=7 && <9
+    , mtl >=2.2.1
     , optparse-generic
     , relude
     , text >=1.2.3.0 && <2
@@ -67,6 +68,7 @@ executable autorequirepp
     , bytestring >=0.10 && <0.11
     , directory
     , megaparsec >=7 && <9
+    , mtl >=2.2.1
     , optparse-generic
     , relude
     , require
@@ -86,6 +88,7 @@ executable requirepp
     , bytestring >=0.10 && <0.11
     , directory
     , megaparsec >=7 && <9
+    , mtl >=2.2.1
     , optparse-generic
     , relude
     , require
@@ -106,6 +109,7 @@ test-suite require-test-suite
     , bytestring >=0.10 && <0.11
     , directory
     , megaparsec >=7 && <9
+    , mtl >=2.2.1
     , optparse-generic
     , relude
     , require
@@ -129,6 +133,7 @@ benchmark require-benchmarks
     , criterion
     , directory
     , megaparsec >=7 && <9
+    , mtl >=2.2.1
     , optparse-generic
     , relude
     , require

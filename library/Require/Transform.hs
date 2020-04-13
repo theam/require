@@ -2,6 +2,7 @@
 module Require.Transform where
 
 import Control.Category ((>>>))
+import Control.Monad.Except
 import qualified Data.Text as Text
 import Relude
 import qualified Require.File as File
@@ -73,8 +74,7 @@ process filterImports (tag, line) = do
                 processAutorequireContent autoContent
           AutorequireOnDirective Nothing
             | isDirective ->
-                -- TODO: Better error reporting.
-                error "Found an `autorequire` directive but no `Requires` file was found."
+                throwError "Found an `autorequire` directive but no `Requires` file was found."
           _ | isDirective -> pure ""
             | otherwise   -> useTagPrep $ line <> "\n"
 
