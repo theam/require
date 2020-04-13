@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2616af9282392d5469785d8f1f099aa3856d6d7b6d83a1e098a51f9892129e8e
+-- hash: aad0fd86e3ceb4bec02932edf1b6d1a47bd7f875cad4b061bb16f37e9972b37d
 
 name:           require
 version:        0.4.8
@@ -64,7 +64,7 @@ executable autorequirepp
   hs-source-dirs:
       executable/AutoRequire/
   default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
-  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
+  ghc-options: -Wall -rtsopts
   build-depends:
       base >=4.9 && <5
     , bytestring >=0.10 && <0.11
@@ -85,7 +85,7 @@ executable requirepp
   hs-source-dirs:
       executable/Require/
   default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
-  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
+  ghc-options: -Wall -rtsopts
   build-depends:
       base >=4.9 && <5
     , bytestring >=0.10 && <0.11

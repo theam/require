@@ -49,8 +49,6 @@ executables:
       - require
     ghc-options:
       - -rtsopts
-      - -threaded
-      - -with-rtsopts=-N
   autorequirepp:
     source-dirs: executable/AutoRequire/
     main: Main.hs
@@ -58,8 +56,6 @@ executables:
       - require
     ghc-options:
       - -rtsopts
-      - -threaded
-      - -with-rtsopts=-N
 
 benchmarks:
   require-benchmarks:
