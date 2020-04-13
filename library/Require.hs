@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiWayIf #-}
 module Require where
 
 import qualified Data.Text as Text
@@ -18,14 +15,12 @@ data CommandArguments
 
 instance ParseRecord CommandArguments
 
-
 findRequires :: IO (Maybe File.Name)
 findRequires = do
   currentDir <- getCurrentDirectory
   files <- getDirectoryContents currentDir
   let textFiles = fmap toText files
   return $ File.Name . head <$> nonEmpty (filter (Text.isSuffixOf "Requires") textFiles)
-
 
 requireMain :: IO ()
 requireMain = do
