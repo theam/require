@@ -166,14 +166,10 @@ renderImport getHostModule line RequireInfo {..} = do
     modify $ \s -> s { tstLineTagPrepend = prep }
     pure $ lineTagPrep line res
   where
-    types = maybe
-      (Text.takeWhileEnd (/= '.') (unModuleName riFullModuleName))
-      (Text.intercalate ",")
-      riImportedTypes
     typesImport = Text.unwords
       [ "import"
       , unModuleName riFullModuleName
-      , "(" <> types <> ")"
+      , "(" <> riImportedTypes <> ")"
       ] <> "\n"
     qualifiedImport = Text.unwords
       [ "import qualified"

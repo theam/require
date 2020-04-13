@@ -41,11 +41,12 @@ requireInfo = do
     void $ Megaparsec.char ')'
     return $ Just t'
 
+  let defaultAlias = defaultModuleAlias module'
   return
     RequireInfo
       { riFullModuleName = module',
-        riModuleAlias = maybe (Text.takeWhileEnd (/= '.') $ unModuleName module') toText alias',
-        riImportedTypes = (fmap Text.strip <$> Text.splitOn ",") . toText <$> types'
+        riModuleAlias = maybe defaultAlias toText alias',
+        riImportedTypes = maybe defaultAlias toText types'
       }
 
 moduleDirective :: Parser RequireDirective
@@ -74,3 +75,13 @@ skipLineComment = void $ Megaparsec.optional $
   Megaparsec.string "--"
     *> (Megaparsec.space1 <|> void Megaparsec.alphaNumChar <|> Megaparsec.eof)
     *> Megaparsec.takeWhileP Nothing (const True)
+
+-- | Extracts the module alias to be used when none is specified. This
+-- corresponds to the last segment of the module's hierarchical name.
+--
+-- >>> defaultModuleAlias (ModuleName "Data.Text.Lazy")
+-- "Lazy"
+-- >>> defaultModuleAlias (ModuleName "Main")
+-- "Main"
+defaultModuleAlias :: ModuleName -> Text
+defaultModuleAlias = Text.takeWhileEnd (/= '.') . unModuleName

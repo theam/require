@@ -22,8 +22,8 @@ data RequireDirective
 -- @
 data RequireInfo
   = RequireInfo
-      { riFullModuleName :: ModuleName,
-        riModuleAlias :: Text,
-        riImportedTypes :: Maybe [Text]
+      { riFullModuleName :: !ModuleName,
+        riModuleAlias :: !Text,
+        riImportedTypes :: !Text
       }
   deriving (Show)
