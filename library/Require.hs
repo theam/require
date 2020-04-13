@@ -25,7 +25,8 @@ findRequires = do
 requireMain :: IO ()
 requireMain = do
   CommandArguments inputFile _ outputFile <- getRecord "Require Haskell preprocessor" :: IO CommandArguments
-  run (AutorequireOnDirective Nothing) (File.Name inputFile) (File.Name outputFile)
+  requiresFile <- findRequires
+  run (AutorequireOnDirective requiresFile) (File.Name inputFile) (File.Name outputFile)
 
 autorequireMain :: IO ()
 autorequireMain = do
