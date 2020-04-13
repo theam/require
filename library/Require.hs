@@ -40,5 +40,6 @@ run :: AutorequireMode File.Name -> File.Name -> File.Name -> IO ()
 run autoMode inputFile outputFile = do
   input <- File.read inputFile
   autoInput <- traverse File.read autoMode
-  let transformed = transform autoInput input
-  File.write outputFile transformed
+  case transform autoInput input of
+    Left err -> die err
+    Right tr -> File.write outputFile tr
