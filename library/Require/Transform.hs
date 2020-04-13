@@ -36,7 +36,7 @@ transform autorequire input =
   --  * there is no need to concatenate the whole output in memory, a lazy text would be fine
   --  * maybe we should check if tstAutorequired is set after processing
   File.inputLines input
-    & mapM (process (pure Nothing))
+    & mapM (process False)
     & flip evalState initialState
     & mconcat
   where
@@ -46,11 +46,8 @@ transform autorequire input =
       , tstAutorequire    = autorequire
       }
 
-process
-  :: State TransformState (Maybe ModuleName)
-  -> (File.LineTag, Text)
-  -> State TransformState Text
-process getHostModule (tag, line) = do
+process :: Bool -> (File.LineTag, Text) -> State TransformState Text
+process filterImports (tag, line) = do
   let useTagPrep text = do
         prep <- gets tstLineTagPrepend
         modify $ \s -> s { tstLineTagPrepend = ignoreLineTag }
@@ -95,7 +92,7 @@ process getHostModule (tag, line) = do
 
     Just (RequireDirective ri) ->
       -- renderImport already prepends the line tag if necessary.
-      renderImport getHostModule tag ri
+      renderImport filterImports tag ri
 
     Just AutorequireDirective ->
       lineWithAutorequire True False
@@ -109,7 +106,7 @@ processAutorequireContent autorequireContent = do
      }
 
   processed <- File.inputLines autorequireContent
-     & mapM (process (gets tstHostModule))
+     & mapM (process True)
      & fmap mconcat
 
   modify $ \s -> s { tstLineTagPrepend = prependLineTag }
@@ -118,19 +115,18 @@ processAutorequireContent autorequireContent = do
 
 renderImport
   :: MonadState TransformState m
-  => m (Maybe ModuleName)
+  => Bool
   -> File.LineTag
   -> RequireInfo
   -> m Text
-renderImport getHostModule line RequireInfo {..} = do
-    mhostModule <- getHostModule
-    lineTagPrep <- gets tstLineTagPrepend
+renderImport filterImports line RequireInfo {..} = do
+    tst <- get
     let (res, prep) =
-          if mhostModule == Just riFullModuleName
+          if filterImports && tstHostModule tst == Just riFullModuleName
              then ("", prependLineTag)
              else (typesImport <> renderLineTag line <> qualifiedImport, ignoreLineTag)
-    modify $ \s -> s { tstLineTagPrepend = prep }
-    pure $ lineTagPrep line res
+    put tst { tstLineTagPrepend = prep }
+    pure $ tstLineTagPrepend tst line res
   where
     typesImport = unwords
       [ "import"
