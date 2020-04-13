@@ -9,6 +9,7 @@ import Relude
 import System.Directory
 import qualified Require.File as File
 import Require.Transform
+import Require.Types
 
 
 data CommandArguments
@@ -29,7 +30,7 @@ findRequires = do
 requireMain :: IO ()
 requireMain = do
   CommandArguments inputFile _ outputFile <- getRecord "Require Haskell preprocessor" :: IO CommandArguments
-  run False Nothing (File.Name inputFile) (File.Name outputFile)
+  run (AutorequireOnDirective Nothing) (File.Name inputFile) (File.Name outputFile)
 
 autorequireMain :: IO ()
 autorequireMain = do
@@ -37,11 +38,11 @@ autorequireMain = do
   requiresFile <- findRequires
   case requiresFile of
     Nothing -> die "There is no Requires file in the system"
-    Just _  -> run True requiresFile (File.Name inputFile) (File.Name outputFile)
+    Just fn -> run (AutorequireEnabled fn) (File.Name inputFile) (File.Name outputFile)
 
-run :: Bool -> Maybe File.Name -> File.Name -> File.Name -> IO ()
-run autorequire requiresFile inputFile outputFile = do
+run :: AutorequireMode File.Name -> File.Name -> File.Name -> IO ()
+run autoMode inputFile outputFile = do
   input <- File.read inputFile
-  requires <- traverse File.read requiresFile
-  let transformed = transform autorequire input requires
+  autoInput <- traverse File.read autoMode
+  let transformed = transform autoInput input
   File.write outputFile transformed

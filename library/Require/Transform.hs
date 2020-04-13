@@ -13,7 +13,7 @@ type LineTagPrepend = File.LineTag -> Text -> Text
 data TransformState = TransformState
   { tstLineTagPrepend :: !LineTagPrepend
   , tstHostModule     :: !(Maybe ModuleName)
-  , tstAutorequired   :: !Bool
+  , tstAutorequire    :: !(AutorequireMode File.Input)
   }
 
 
@@ -29,44 +29,50 @@ ignoreLineTag :: LineTagPrepend
 ignoreLineTag = const id
 
 
-transform :: Bool -> File.Input -> Maybe File.Input -> Text
-transform autorequireEnabled input prepended =
+transform :: AutorequireMode File.Input -> File.Input -> Text
+transform autorequire input =
   -- TODO:
   --  * if the mapM overhead is too much maybe use a streaming library
   --  * there is no need to concatenate the whole output in memory, a lazy text would be fine
   --  * maybe we should check if tstAutorequired is set after processing
   File.inputLines input
-    & mapM (process (pure Nothing) autorequireEnabled prepended)
+    & mapM (process (pure Nothing))
     & flip evalState initialState
     & mconcat
   where
     initialState = TransformState
       { tstLineTagPrepend = prependLineTag
       , tstHostModule     = Nothing
-      , tstAutorequired   = False
+      , tstAutorequire    = autorequire
       }
 
 process
   :: State TransformState (Maybe ModuleName)
-  -> Bool
-  -> Maybe File.Input
   -> (File.LineTag, Text)
   -> State TransformState Text
-process getHostModule autorequireEnabled prepended (tag, line) = do
+process getHostModule (tag, line) = do
   let useTagPrep text = do
         prep <- gets tstLineTagPrepend
         modify $ \s -> s { tstLineTagPrepend = ignoreLineTag }
         pure $ prep tag text
 
-  let lineWithAutorequire cond
-        | autorequireEnabled && cond = do
-            -- Call useTagPrep before processAutorequireContent because the
-            -- latter one modifies tstLineTagPrepend which the former one uses.
-            line' <- useTagPrep $ line <> "\n"
-            auto  <- processAutorequireContent prepended
-            pure $ line' <> auto
-        | otherwise =
-            useTagPrep $ line <> "\n"
+  let lineWithAutorequire isDirective autoCondition = do
+        autoMode <- gets tstAutorequire
+        case autoMode of
+          AutorequireEnabled autoContent
+            | isDirective || autoCondition -> do
+                line' <- if isDirective then pure "" else useTagPrep (line <> "\n")
+                auto  <- processAutorequireContent autoContent
+                pure $ line' <> auto
+          AutorequireOnDirective (Just autoContent)
+            | isDirective -> do
+                processAutorequireContent autoContent
+          AutorequireOnDirective Nothing
+            | isDirective ->
+                -- TODO: Better error reporting.
+                error "Found an `autorequire` directive but no `Requires` file was found."
+          _ | isDirective -> pure ""
+            | otherwise   -> useTagPrep $ line <> "\n"
 
   let hasWhere =
         -- TODO: This assumes that comments have whitespace before them and
@@ -80,40 +86,34 @@ process getHostModule autorequireEnabled prepended (tag, line) = do
   case Parser.parseMaybe Parser.requireDirective line of
     Nothing -> do
       hasModule <- gets $ isJust . tstHostModule
-      lineWithAutorequire $ hasModule && hasWhere
+      lineWithAutorequire False $ hasModule && hasWhere
 
     Just (ModuleDirective moduleName) -> do
       -- If there is already a module name, don't overwrite it.
       modify $ \s -> s { tstHostModule = tstHostModule s <|> Just moduleName }
-      lineWithAutorequire hasWhere
+      lineWithAutorequire False hasWhere
 
     Just (RequireDirective ri) ->
       -- renderImport already prepends the line tag if necessary.
       renderImport getHostModule tag ri
 
     Just AutorequireDirective ->
-      processAutorequireContent prepended
+      lineWithAutorequire True False
 
 
-processAutorequireContent :: Maybe File.Input -> State TransformState Text
-processAutorequireContent Nothing = pure ""
-processAutorequireContent (Just autorequireContent) = do
-  alreadyAutorequired <- gets tstAutorequired
-  autorequireContent' <-
-    if alreadyAutorequired
-       then pure ""
-       else do
-           modify $ \s -> s
-             { tstLineTagPrepend = prependLineTag
-             , tstAutorequired = True
-             }
+processAutorequireContent :: File.Input -> State TransformState Text
+processAutorequireContent autorequireContent = do
+  modify $ \s -> s
+     { tstLineTagPrepend = prependLineTag
+     , tstAutorequire    = AutorequireDisabled
+     }
 
-           File.inputLines autorequireContent
-             & mapM (process (gets tstHostModule) False Nothing)
-             & fmap mconcat
+  processed <- File.inputLines autorequireContent
+     & mapM (process (gets tstHostModule))
+     & fmap mconcat
 
   modify $ \s -> s { tstLineTagPrepend = prependLineTag }
-  pure autorequireContent'
+  pure processed
 
 
 renderImport

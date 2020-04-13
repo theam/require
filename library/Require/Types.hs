@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveTraversable #-}
 module Require.Types where
 
 import Relude
@@ -27,3 +28,17 @@ data RequireInfo
         riImportedTypes :: !Text
       }
   deriving (Show)
+
+
+data AutorequireMode a
+  = AutorequireEnabled a
+    -- ^ Include the contents of the Requires file directly after the @module …
+    -- where@ directive.
+
+  | AutorequireOnDirective (Maybe a)
+    -- ^ Include the contents of the Requires file when the user specifies the
+    -- @autorequire@ directive.
+
+  | AutorequireDisabled
+    -- ^ Don't do any auto-requiring.
+  deriving (Functor, Foldable, Traversable)
