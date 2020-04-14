@@ -50,13 +50,10 @@ ignoreLineTag = const (pure ())
 
 transform :: AutorequireMode File.Input -> File.Input -> Either Error [Text]
 transform autorequire =
-  -- TODO:
-  --  * if the mapM overhead is too much maybe use a streaming library
-  --  * there is no need to concatenate the whole output in memory, a lazy text would be fine
-  --  * maybe we should check if tstAutorequired is set after processing
   File.inputLines
     >>> traverse_ (process False)
-    >>> flip runStateT initialState
+    >>> flip execStateT initialState
+    >>> (>>= checkDidAutorequire)
     >>> execWriterT
     >>> fmap toList
   where
@@ -65,6 +62,20 @@ transform autorequire =
       , tstHostModule     = Nothing
       , tstAutorequire    = autorequire
       }
+
+    unableToAutorequire resultState
+      -- If the autorequire mode was `enabled` initially and still is
+      -- afterwards, we were unable to find where to place the Require contents.
+      | AutorequireEnabled _ <- autorequire
+      , AutorequireEnabled _ <- tstAutorequire resultState
+      = True
+      -- In any other case this either wasn't goal or it was done successfully.
+      | otherwise
+      = False
+
+    checkDidAutorequire resultState
+      | unableToAutorequire resultState = throwError AutorequireImpossible
+      | otherwise = pure ()
 
 
 process :: Bool -> (File.LineTag, Text) -> TransformM ()

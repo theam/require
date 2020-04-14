@@ -165,18 +165,28 @@ spec = parallel $ do
           , "  ) where"
           ]
       it "doesn't add after data/class/instance declarations" $ do
-        checkInclusion 0 $ Text.unlines
-          [ "class Foo a where"
-          , "instance Foo x => Bar (Baz x) where"
-          , "data Vec n a where"
-          , "  Nil :: Vec 0 a"
-          , "  Cons :: a -> Vec n a -> Vec (n + 1) a"
-          ]
+        let fileInput = unlines
+              [ "class Foo a where"
+              , "instance Foo x => Bar (Baz x) where"
+              , "data Vec n a where"
+              , "  Nil :: Vec 0 a"
+              , "  Cons :: a -> Vec n a -> Vec (n + 1) a"
+              ]
+        let requireInput = unlines [ "import A" ]
+        let actual = Require.transform
+              (AutorequireEnabled $ File.Input (File.Name "Requires") requireInput)
+              (File.Input (File.Name "Foo.hs") fileInput)
+        actual `shouldBe` Left Error.AutorequireImpossible
       it "doesn't add after data/class/instance declarations split to multiple lines" $ do
-        checkInclusion 0 $ Text.unlines
-          [ "class Foo a -- some explanation here"
-          , "  where"
-          ]
+        let fileInput = unlines
+              [ "class Foo a -- some explanation here"
+              , "  where"
+              ]
+        let requireInput = unlines [ "import A" ]
+        let actual = Require.transform
+              (AutorequireEnabled $ File.Input (File.Name "Requires") requireInput)
+              (File.Input (File.Name "Foo.hs") fileInput)
+        actual `shouldBe` Left Error.AutorequireImpossible
 
     describe "triggered using the autorequire directive" $ do
       it "can be triggered before without a module directive" $ do
