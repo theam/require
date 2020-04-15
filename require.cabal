@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aad0fd86e3ceb4bec02932edf1b6d1a47bd7f875cad4b061bb16f37e9972b37d
+-- hash: bb70ccb8324225986d8fb8a3a54207684bea945c731d90225ec3d9bde1df2cfe
 
 name:           require
 version:        0.4.8
@@ -46,7 +46,8 @@ library
   default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
   ghc-options: -Wall
   build-depends:
-      base >=4.9 && <5
+      ansi-terminal
+    , base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
     , dlist
@@ -66,7 +67,8 @@ executable autorequirepp
   default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
   ghc-options: -Wall -rtsopts
   build-depends:
-      base >=4.9 && <5
+      ansi-terminal
+    , base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
     , dlist
@@ -87,7 +89,8 @@ executable requirepp
   default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
   ghc-options: -Wall -rtsopts
   build-depends:
-      base >=4.9 && <5
+      ansi-terminal
+    , base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
     , dlist
@@ -109,7 +112,8 @@ test-suite require-test-suite
   default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
   ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
   build-depends:
-      base >=4.9 && <5
+      ansi-terminal
+    , base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
     , dlist
@@ -133,7 +137,8 @@ benchmark require-benchmarks
   default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
   ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
   build-depends:
-      base >=4.9 && <5
+      ansi-terminal
+    , base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , criterion
     , directory

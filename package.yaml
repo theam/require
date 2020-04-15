@@ -37,6 +37,7 @@ dependencies:
   - directory
   - optparse-generic
   - dlist
+  - ansi-terminal
 
 library:
   source-dirs: library

@@ -42,5 +42,5 @@ run autoMode inputFile outputFile = do
   input <- File.read inputFile
   autoInput <- traverse File.read autoMode
   case transform autoInput input of
-    Left err -> die (Error.describe err)
+    Left err -> Error.die inputFile err
     Right ls -> File.writeLines outputFile ls
