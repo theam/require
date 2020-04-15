@@ -34,7 +34,6 @@ dependencies:
   - text >= 1.2.3.0 && < 2
   - megaparsec >= 7 && < 8
   - directory
-  - inliterate
   - optparse-generic
 
 library:
