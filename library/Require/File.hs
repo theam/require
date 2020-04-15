@@ -30,7 +30,7 @@ data LineTag = LineTag !Name !LineNumber
 -- | Returns the 'LineTag' referencing the first line in a given 'FileInput'.
 --
 -- Note that the tag's line number is 1-based, which fits well with how GHC
--- understands @{-# LINE ... #-}@ pragmas.
+-- understands @{-\# LINE ... #-}@ pragmas.
 initialLineTag :: Input -> LineTag
 initialLineTag inp = LineTag (inputName inp) (LineNumber 1)
 

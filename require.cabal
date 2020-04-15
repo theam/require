@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ceeb2f9c5a160393a1fd86ca01c63c4d957d256ae92501abfd87e3d415f5c686
+-- hash: b5fbb89313fc25a016996a3226294577eb819df7a681a9f5f08459446898196f
 
 name:           require
 version:        0.4.8
@@ -48,8 +48,7 @@ library
       base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
-    , inliterate
-    , megaparsec >=7 && <8
+    , megaparsec >=7 && <9
     , optparse-generic
     , relude
     , text >=1.2.3.0 && <2
@@ -67,8 +66,7 @@ executable autorequirepp
       base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
-    , inliterate
-    , megaparsec >=7 && <8
+    , megaparsec >=7 && <9
     , optparse-generic
     , relude
     , require
@@ -87,8 +85,7 @@ executable requirepp
       base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
-    , inliterate
-    , megaparsec >=7 && <8
+    , megaparsec >=7 && <9
     , optparse-generic
     , relude
     , require
@@ -108,8 +105,7 @@ test-suite require-test-suite
       base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
-    , inliterate
-    , megaparsec >=7 && <8
+    , megaparsec >=7 && <9
     , optparse-generic
     , relude
     , require
@@ -132,8 +128,7 @@ benchmark require-benchmarks
     , bytestring >=0.10 && <0.11
     , criterion
     , directory
-    , inliterate
-    , megaparsec >=7 && <8
+    , megaparsec >=7 && <9
     , optparse-generic
     , relude
     , require
