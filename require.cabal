@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 25f008ba92d8664cb116c449c78a787c5d204822c10d96ab6712fa046b3c7e40
+-- hash: 2616af9282392d5469785d8f1f099aa3856d6d7b6d83a1e098a51f9892129e8e
 
 name:           require
 version:        0.4.8
@@ -49,6 +49,7 @@ library
       base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
+    , dlist
     , megaparsec >=7 && <9
     , mtl >=2.2.1
     , optparse-generic
@@ -68,6 +69,7 @@ executable autorequirepp
       base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
+    , dlist
     , megaparsec >=7 && <9
     , mtl >=2.2.1
     , optparse-generic
@@ -88,6 +90,7 @@ executable requirepp
       base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
+    , dlist
     , megaparsec >=7 && <9
     , mtl >=2.2.1
     , optparse-generic
@@ -109,6 +112,7 @@ test-suite require-test-suite
       base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
+    , dlist
     , megaparsec >=7 && <9
     , mtl >=2.2.1
     , optparse-generic
@@ -133,6 +137,7 @@ benchmark require-benchmarks
     , bytestring >=0.10 && <0.11
     , criterion
     , directory
+    , dlist
     , megaparsec >=7 && <9
     , mtl >=2.2.1
     , optparse-generic

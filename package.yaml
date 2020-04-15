@@ -36,6 +36,7 @@ dependencies:
   - mtl >= 2.2.1
   - directory
   - optparse-generic
+  - dlist
 
 library:
   source-dirs: library

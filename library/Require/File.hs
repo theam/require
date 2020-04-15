@@ -9,6 +9,7 @@
 module Require.File where
 
 import Relude
+import qualified Data.Text.IO as TIO
 
 -- | Wraps the name of a file as given by the user. Usually this corresponds to
 -- the file's path.
@@ -42,9 +43,11 @@ advanceLineTag (LineTag fn ln) = LineTag fn (succ ln)
 read :: Name -> IO Input
 read f = Input f <$> readFileText (nameToPath f)
 
--- | @write name content@ writes @content@ to the file identified by @name@.
-write :: Name -> Text -> IO ()
-write = writeFileText . nameToPath
+-- | @write name lines@ writes all every line in @lines@ to the file identified
+-- by @name@ and appends a newline.
+writeLines :: Name -> [Text] -> IO ()
+writeLines name theLines = withFile (nameToPath name) WriteMode $ \h ->
+  traverse_ (TIO.hPutStrLn h) theLines
 
 -- | Splits the input into lines and annotates each with a 'LineTag'.
 inputLines :: Input -> [(LineTag, Text)]

@@ -14,7 +14,7 @@ main = do
 
 spec :: Spec
 spec = parallel $ do
-  let transform autoMode fileInput =
+  let transformLines autoMode fileInput =
         case Require.transform autoMode fileInput of
           Left err -> do
             -- sadly expectationFailure is not polymorphic in its return type
@@ -23,11 +23,11 @@ spec = parallel $ do
           Right tr ->
             pure tr
 
-  let transformString autoMode =
+      transformString autoMode =
          fmap toString . transform autoMode
 
-  let transformLines autoMode =
-         fmap lines . transform autoMode
+      transform autoMode =
+         fmap unlines . transformLines autoMode
 
   describe "the transformation" $ do
     it "transforms the 'require' keyword into a properly qualified import" $ do

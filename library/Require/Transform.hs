@@ -3,6 +3,8 @@ module Require.Transform where
 
 import Control.Category ((>>>))
 import Control.Monad.Except
+import Control.Monad.Writer.Strict
+import Data.DList (DList)
 import qualified Data.Text as Text
 import Relude
 import Require.Error (Error(..))
@@ -11,65 +13,78 @@ import qualified Require.Parser as Parser
 import Require.Types
 
 
-type LineTagPrepend = File.LineTag -> Text -> Text
+-- | The monad stack used during transformation:
+--
+-- * @'StateT' 'TransformState'@ to keep track of whether to render the next
+--   line tag, the module's name etc.
+-- * @'WriterT' ('DList' 'Text')@ to collect the output lines. Instead of
+--   haskell's built-in list type we use 'DList' because of it's /O(1)/ append
+--   operation.
+-- * @'Either' 'Error'@ to return errors.
+type TransformM =
+  StateT TransformState
+    (WriterT (DList Text)
+      (Either Error))
+
 
 data TransformState = TransformState
-  { tstLineTagPrepend :: !LineTagPrepend
+  { tstLineTagOutput  :: File.LineTag -> TransformM ()
   , tstHostModule     :: !(Maybe ModuleName)
   , tstAutorequire    :: !(AutorequireMode File.Input)
   }
 
 
-type TransformM =
-  ExceptT Error
-    (State TransformState)
+-- | Outputs a single line.
+output :: Text -> TransformM ()
+output = tell . pure
 
-
-renderLineTag :: File.LineTag -> Text
+-- | Outputs the pragma representation of the given line tag.
+renderLineTag :: File.LineTag -> TransformM ()
 renderLineTag (File.LineTag (File.Name fn) (File.LineNumber ln)) =
-  "{-# LINE " <> show ln <> " \"" <> fn <> "\" #-}\n"
+  output $ "{-# LINE " <> show ln <> " \"" <> fn <> "\" #-}"
+
+-- | Ignore the given line tag, specifically don't render it.
+ignoreLineTag :: File.LineTag -> TransformM ()
+ignoreLineTag = const (pure ())
 
 
-prependLineTag :: LineTagPrepend
-prependLineTag = (<>) . renderLineTag
-
-ignoreLineTag :: LineTagPrepend
-ignoreLineTag = const id
-
-
-transform :: AutorequireMode File.Input -> File.Input -> Either Error Text
+transform :: AutorequireMode File.Input -> File.Input -> Either Error [Text]
 transform autorequire =
   -- TODO:
   --  * if the mapM overhead is too much maybe use a streaming library
   --  * there is no need to concatenate the whole output in memory, a lazy text would be fine
   --  * maybe we should check if tstAutorequired is set after processing
   File.inputLines
-    >>> mapM (process False)
-    >>> runExceptT
-    >>> flip evalState initialState
-    >>> fmap mconcat
+    >>> traverse_ (process False)
+    >>> flip runStateT initialState
+    >>> execWriterT
+    >>> fmap toList
   where
     initialState = TransformState
-      { tstLineTagPrepend = prependLineTag
+      { tstLineTagOutput  = renderLineTag
       , tstHostModule     = Nothing
       , tstAutorequire    = autorequire
       }
 
-process :: Bool -> (File.LineTag, Text) -> TransformM Text
+
+process :: Bool -> (File.LineTag, Text) -> TransformM ()
 process filterImports (tag, line) = do
-  let useTagPrep text = do
-        prep <- gets tstLineTagPrepend
-        modify $ \s -> s { tstLineTagPrepend = ignoreLineTag }
-        pure $ prep tag text
+  -- Uses 'tstLineTagOutput' to render the current lines tag if necessary.
+  let useTagPrep = do
+        tst <- get
+        tstLineTagOutput tst tag
+        put (tst { tstLineTagOutput = ignoreLineTag })
 
   let lineWithAutorequire isDirective autoCondition = do
         autoMode <- gets tstAutorequire
         case autoMode of
           AutorequireEnabled autoContent
             | isDirective || autoCondition -> do
-                line' <- if isDirective then pure "" else useTagPrep (line <> "\n")
-                auto  <- processAutorequireContent autoContent
-                pure $ line' <> auto
+                -- If this is an `autorequire` directive, ignore it. Otherwise
+                -- output the line tag if necessary (useTagPrep) and then the
+                -- line itself.
+                unless isDirective (useTagPrep >> output line)
+                processAutorequireContent autoContent
 
           AutorequireOnDirective (Just autoContent)
             | isDirective -> processAutorequireContent autoContent
@@ -77,8 +92,8 @@ process filterImports (tag, line) = do
           AutorequireOnDirective Nothing
             | isDirective -> throwError MissingRequiresFile
 
-          _ | isDirective -> pure ""
-            | otherwise   -> useTagPrep $ line <> "\n"
+          _ | isDirective -> pure ()
+            | otherwise   -> useTagPrep >> output line
 
   let hasWhere =
         -- TODO: This assumes that comments have whitespace before them and
@@ -107,39 +122,41 @@ process filterImports (tag, line) = do
       lineWithAutorequire True False
 
 
-processAutorequireContent :: File.Input -> TransformM Text
+processAutorequireContent :: File.Input -> TransformM ()
 processAutorequireContent autorequireContent = do
   modify $ \s -> s
-     { tstLineTagPrepend = prependLineTag
+     { tstLineTagOutput  = renderLineTag
      , tstAutorequire    = AutorequireDisabled
      }
 
-  processed <- File.inputLines autorequireContent
-     & mapM (process True)
-     & fmap mconcat
-
-  modify $ \s -> s { tstLineTagPrepend = prependLineTag }
-  pure processed
+  traverse_ (process True) (File.inputLines autorequireContent)
+  modify $ \s -> s { tstLineTagOutput = renderLineTag }
 
 
-renderImport :: Bool -> File.LineTag -> RequireInfo -> TransformM Text
+renderImport :: Bool -> File.LineTag -> RequireInfo -> TransformM ()
 renderImport filterImports line RequireInfo {..} = do
     tst <- get
-    let (res, prep) =
-          if filterImports && tstHostModule tst == Just riFullModuleName
-             then ("", prependLineTag)
-             else (typesImport <> renderLineTag line <> qualifiedImport, ignoreLineTag)
-    put tst { tstLineTagPrepend = prep }
-    pure $ tstLineTagPrepend tst line res
+    if filterImports && tstHostModule tst == Just riFullModuleName
+      then
+        -- We skipped a line, therefore we need a line tag before outputting
+        -- the next one.
+        put (tst { tstLineTagOutput = renderLineTag })
+
+      else
+        tstLineTagOutput tst line
+          >> output typesImport
+          >> renderLineTag line
+          >> output qualifiedImport
+          >> put (tst { tstLineTagOutput = ignoreLineTag })
   where
     typesImport = unwords
       [ "import"
       , unModuleName riFullModuleName
       , "(" <> riImportedTypes <> ")"
-      ] <> "\n"
+      ]
     qualifiedImport = unwords
       [ "import qualified"
       , unModuleName riFullModuleName
       , "as"
       , riModuleAlias
-      ] <> "\n"
+      ]
