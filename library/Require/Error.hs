@@ -9,14 +9,16 @@ import System.IO
 
 data Error
   = MissingRequiresFile
+  | MissingOptionalRequiresFile
   | AutorequireImpossible
   deriving (Eq, Show)
 
 
 describe :: Error -> [String]
 describe MissingRequiresFile =
-  [ "Discovered an `autorequire` directive but no `Requires` file was found."
-  ]
+  [ "`autorequirepp` couldn't find a `Requires` file in the system." ]
+describe MissingOptionalRequiresFile =
+  [ "Discovered an `autorequire` directive but no `Requires` file was found." ]
 describe AutorequireImpossible =
   [ "Unable to determine where to insert the autorequire contents."
   , "Use the `autorequire` directive to specify a location yourself."

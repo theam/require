@@ -139,7 +139,7 @@ spec = parallel $ do
         let actual = Require.transform
               (AutorequireOnDirective Nothing)
               (File.Input (File.Name "Foo.hs") fileInput)
-        actual `shouldBe` Left Error.MissingRequiresFile
+        actual `shouldBe` Left Error.MissingOptionalRequiresFile
 
   describe "autorequire-mode" $ do
     describe "inclusion after module directive" $ do

@@ -34,7 +34,7 @@ autorequireMain = do
   CommandArguments inputFile _ outputFile <- getRecord "Require Haskell preprocessor" :: IO CommandArguments
   requiresFile <- findRequires
   case requiresFile of
-    Nothing -> die "There is no Requires file in the system"
+    Nothing -> Error.die (File.Name inputFile) Error.MissingRequiresFile
     Just fn -> run (AutorequireEnabled fn) (File.Name inputFile) (File.Name outputFile)
 
 run :: AutorequireMode File.Name -> File.Name -> File.Name -> IO ()

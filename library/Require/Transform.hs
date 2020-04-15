@@ -101,7 +101,7 @@ process filterImports (tag, line) = do
             | isDirective -> processAutorequireContent autoContent
 
           AutorequireOnDirective Nothing
-            | isDirective -> throwError MissingRequiresFile
+            | isDirective -> throwError MissingOptionalRequiresFile
 
           _ | isDirective -> pure ()
             | otherwise   -> useTagPrep >> output line
