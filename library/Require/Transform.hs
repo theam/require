@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Require.Transform where
 
-import Control.Category ((>>>))
 import Control.Monad.Except
 import Control.Monad.Writer.Strict
 import Data.DList (DList)
@@ -49,13 +48,13 @@ ignoreLineTag = const (pure ())
 
 
 transform :: AutorequireMode File.Input -> File.Input -> Either Error [Text]
-transform autorequire =
-  File.inputLines
-    >>> traverse_ (process False)
-    >>> flip execStateT initialState
-    >>> (>>= checkDidAutorequire)
-    >>> execWriterT
-    >>> fmap toList
+transform autorequire input =
+  File.inputLines input
+    & traverse_ (process False)
+    & flip execStateT initialState
+    & chainedTo checkDidAutorequire
+    & execWriterT
+    & fmap toList
   where
     initialState = TransformState
       { tstLineTagOutput  = renderLineTag
@@ -153,12 +152,12 @@ renderImport filterImports line RequireInfo {..} = do
         -- the next one.
         put (tst { tstLineTagOutput = renderLineTag })
 
-      else
+      else do
         tstLineTagOutput tst line
-          >> output typesImport
-          >> renderLineTag line
-          >> output qualifiedImport
-          >> put (tst { tstLineTagOutput = ignoreLineTag })
+        output typesImport
+        renderLineTag line
+        output qualifiedImport
+        put (tst { tstLineTagOutput = ignoreLineTag })
   where
     typesImport = unwords
       [ "import"
