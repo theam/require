@@ -1,5 +1,6 @@
 import qualified Data.Text as Text
 import Relude
+import qualified Require.Error as Error
 import qualified Require.File as File
 import qualified Require.Transform as Require
 import Require.Types
@@ -13,21 +14,36 @@ main = do
 
 spec :: Spec
 spec = parallel $ do
+  let transformLines autoMode fileInput =
+        case Require.transform autoMode fileInput of
+          Left err -> do
+            -- sadly expectationFailure is not polymorphic in its return type
+            expectationFailure $ "Tranform failed: " ++ show err
+            pure $ error "expectationFailure should have thrown"
+          Right tr ->
+            pure tr
+
+      transformString autoMode =
+         fmap toString . transform autoMode
+
+      transform autoMode =
+         fmap unlines . transformLines autoMode
+
   describe "the transformation" $ do
     it "transforms the 'require' keyword into a properly qualified import" $ do
       let input = "require Data.Text"
       let expected = "import qualified Data.Text as Text"
-      let actual = Require.transform
+      actual <- transformString
             AutorequireDisabled
             (File.Input (File.Name "Foo.hs") input)
-      expected `Text.isInfixOf` actual
+      actual `shouldContain` expected
     it "imports the type based on the module" $ do
       let input = "require Data.Text"
       let expected = "import Data.Text (Text)"
-      let actual = Require.transform
+      actual <- transformString
             AutorequireDisabled
             (File.Input (File.Name "Foo.hs") input)
-      expected `Text.isInfixOf` actual
+      actual `shouldContain` expected
     it "keeps the rest of the content intact" $ do
       let input = "module Foo where\nrequire Data.Text\nfoo = 42"
       let expectedStart = "{-# LINE 1"
@@ -35,7 +51,7 @@ spec = parallel $ do
       let expectedTypeImport = "import Data.Text (Text)"
       let expectedQualifiedImport = "import qualified Data.Text as Text"
       let expectedContent = "foo = 42\n"
-      let actual = toString $ Require.transform
+      actual <- transformString
             AutorequireDisabled
             (File.Input (File.Name "Foo.hs") input)
       actual `shouldStartWith` expectedStart
@@ -47,7 +63,7 @@ spec = parallel $ do
       let input = "require Data.Text as Foo"
       let expectedTypeImport = "import Data.Text (Text)"
       let expectedQualifiedImport = "import qualified Data.Text as Foo"
-      let actual = toString $ Require.transform
+      actual <- transformString
             AutorequireDisabled
             (File.Input (File.Name "Foo.hs") input)
       actual `shouldContain` expectedTypeImport
@@ -56,7 +72,7 @@ spec = parallel $ do
       let input = "require Data.Text (Foo)"
       let expectedTypeImport = "import Data.Text (Foo)"
       let expectedQualifiedImport = "import qualified Data.Text as Text"
-      let actual = toString $ Require.transform
+      actual <- transformString
             AutorequireDisabled
             (File.Input (File.Name "Foo.hs") input)
       actual `shouldContain` expectedTypeImport
@@ -65,7 +81,7 @@ spec = parallel $ do
       let input = "require Data.Text as Quux (Foo)"
       let expectedTypeImport = "import Data.Text (Foo)"
       let expectedQualifiedImport = "import qualified Data.Text as Quux"
-      let actual = toString $ Require.transform
+      actual <- transformString
             AutorequireDisabled
             (File.Input (File.Name "Foo.hs") input)
       actual `shouldContain` expectedTypeImport
@@ -73,55 +89,63 @@ spec = parallel $ do
     it "skips comments" $ do
       let input = "require Data.Text -- test of comments"
       let expected = "import Data.Text (Text)"
-      let actual = Require.transform
+      actual <- transformString
             AutorequireDisabled
             (File.Input (File.Name "Foo.hs") input)
-      expected `Text.isInfixOf` actual
+      actual `shouldContain` expected
     it "allows empty parentheses" $ do
       let input = "require Data.Text ()"
       let expected1 = "import Data.Text ()"
       let expected2 = "import qualified Data.Text as Text"
-      let actual = lines $ Require.transform
+      actual <- transformLines
             AutorequireDisabled
             (File.Input (File.Name "Foo.hs") input)
       actual `shouldSatisfy` elem expected1
       actual `shouldSatisfy` elem expected2
 
   describe "require-mode" $ do
-    it "respects autorequire directives" $ do
-      let fileInput = Text.unlines [ "module Main where", "autorequire", "import B" ]
-      let requireInput = Text.unlines [ "import A" ]
-      let actual = Text.lines $ Require.transform
-            (AutorequireOnDirective $ Just $ File.Input (File.Name "Requires") requireInput)
-            (File.Input (File.Name "src/Foo/Bar.hs") fileInput)
-      actual `shouldSatisfy` elem "module Main where"
-      actual `shouldSatisfy` elem "import A"
-      actual `shouldSatisfy` elem "import B"
-      actual `shouldSatisfy` elemN 0 "autorequire"
-    it "ignores a second autorequire directive" $ do
-      let fileInput = Text.unlines [ "autorequire", "autorequire" ]
-      let requireInput = Text.unlines [ "import A" ]
-      let actual = Text.lines $ Require.transform
-            (AutorequireOnDirective $ Just $ File.Input (File.Name "Requires") requireInput)
-            (File.Input (File.Name "src/Foo/Bar.hs") fileInput)
-      actual `shouldSatisfy` elemN 1 "import A"
-      actual `shouldSatisfy` elemN 0 "autorequire"
     it "keeps requires where the module is a substring of the filename" $ do
       -- Test case for https://github.com/theam/require/issues/20
       let fileInput = Text.unlines [ "module FooTest where", "require Foo" ]
       let expected1 = "import Foo (Foo)"
       let expected2 = "import qualified Foo as Foo"
-      let actual = lines $ Require.transform
+      actual <- transformLines
             AutorequireDisabled
             (File.Input (File.Name "FooTests.hs") fileInput)
       actual `shouldSatisfy` elem expected1
       actual `shouldSatisfy` elem expected2
 
+    describe "autorequire directive" $ do
+      it "respects them" $ do
+        let fileInput = Text.unlines [ "module Main where", "autorequire", "import B" ]
+        let requireInput = Text.unlines [ "import A" ]
+        actual <- transformLines
+              (AutorequireOnDirective $ Just $ File.Input (File.Name "Requires") requireInput)
+              (File.Input (File.Name "src/Foo/Bar.hs") fileInput)
+        actual `shouldSatisfy` elem "module Main where"
+        actual `shouldSatisfy` elem "import A"
+        actual `shouldSatisfy` elem "import B"
+        actual `shouldSatisfy` elemN 0 "autorequire"
+      it "ignores them after the first one" $ do
+        let fileInput = Text.unlines [ "autorequire", "autorequire" ]
+        let requireInput = Text.unlines [ "import A" ]
+        actual <- transformLines
+              (AutorequireOnDirective $ Just $ File.Input (File.Name "Requires") requireInput)
+              (File.Input (File.Name "src/Foo/Bar.hs") fileInput)
+        actual `shouldSatisfy` elemN 1 "import A"
+        actual `shouldSatisfy` elemN 0 "autorequire"
+      it "throws an error if no requires file is provided" $ do
+        let fileInput = "autorequire"
+        let actual = Require.transform
+              (AutorequireOnDirective Nothing)
+              (File.Input (File.Name "Foo.hs") fileInput)
+        actual `shouldBe` Left Error.MissingOptionalRequiresFile
+
   describe "autorequire-mode" $ do
     describe "inclusion after module directive" $ do
       let checkInclusion n fileInput = do
             let requireInput = "import A"
-            let actual = Text.lines $ Require.transform
+            actual <- transformLines
                   (AutorequireEnabled $ File.Input (File.Name "Requires") requireInput)
                   (File.Input (File.Name "src/Foo/Bar.hs") fileInput)
             actual `shouldSatisfy` elemN n requireInput
@@ -141,18 +165,28 @@ spec = parallel $ do
           , "  ) where"
           ]
       it "doesn't add after data/class/instance declarations" $ do
-        checkInclusion 0 $ Text.unlines
-          [ "class Foo a where"
-          , "instance Foo x => Bar (Baz x) where"
-          , "data Vec n a where"
-          , "  Nil :: Vec 0 a"
-          , "  Cons :: a -> Vec n a -> Vec (n + 1) a"
-          ]
+        let fileInput = unlines
+              [ "class Foo a where"
+              , "instance Foo x => Bar (Baz x) where"
+              , "data Vec n a where"
+              , "  Nil :: Vec 0 a"
+              , "  Cons :: a -> Vec n a -> Vec (n + 1) a"
+              ]
+        let requireInput = unlines [ "import A" ]
+        let actual = Require.transform
+              (AutorequireEnabled $ File.Input (File.Name "Requires") requireInput)
+              (File.Input (File.Name "Foo.hs") fileInput)
+        actual `shouldBe` Left Error.AutorequireImpossible
       it "doesn't add after data/class/instance declarations split to multiple lines" $ do
-        checkInclusion 0 $ Text.unlines
-          [ "class Foo a -- some explanation here"
-          , "  where"
-          ]
+        let fileInput = unlines
+              [ "class Foo a -- some explanation here"
+              , "  where"
+              ]
+        let requireInput = unlines [ "import A" ]
+        let actual = Require.transform
+              (AutorequireEnabled $ File.Input (File.Name "Requires") requireInput)
+              (File.Input (File.Name "Foo.hs") fileInput)
+        actual `shouldBe` Left Error.AutorequireImpossible
 
     describe "triggered using the autorequire directive" $ do
       it "can be triggered before without a module directive" $ do
@@ -164,7 +198,7 @@ spec = parallel $ do
               , "{-# LINE 2 \"Foo.hs\" #-}"
               , "main = return ()"
               ]
-        let actual = Require.transform
+        actual <- transform
               (AutorequireEnabled $ File.Input (File.Name "Requires") requireInput)
               (File.Input (File.Name "Foo.hs") fileInput)
         actual `shouldBe` expected
@@ -177,7 +211,7 @@ spec = parallel $ do
               , "{-# LINE 1 \"Requires\" #-}"
               , "import A"
               ]
-        let actual = Require.transform
+        actual <- transform
               (AutorequireEnabled $ File.Input (File.Name "Requires") requireInput)
               (File.Input (File.Name "Foo.hs") fileInput)
         actual `shouldBe` expected
@@ -190,7 +224,7 @@ spec = parallel $ do
               , "{-# LINE 2 \"Foo.hs\" #-}"
               , "module Main where"
               ]
-        let actual = Require.transform
+        actual <- transform
               (AutorequireEnabled $ File.Input (File.Name "Requires") requireInput)
               (File.Input (File.Name "Foo.hs") fileInput)
         actual `shouldBe` expected
@@ -199,7 +233,7 @@ spec = parallel $ do
       let fileInput = "module Foo.Bar where"
       let requireInput = "require Foo.Bar"
       let notExpected = "import Foo.Bar"
-      let actual = Require.transform
+      actual <- transform
             (AutorequireEnabled $ File.Input (File.Name "Requires") requireInput)
             (File.Input (File.Name "src/Foo/Bar.hs") fileInput)
       toString actual `shouldNotContain` notExpected
@@ -214,7 +248,7 @@ spec = parallel $ do
             , "{-# LINE 2 \"Foo.hs\" #-}"
             , "import B"
             ]
-      let actual = Require.transform
+      actual <- transform
             (AutorequireEnabled $ File.Input (File.Name "Requires") requireInput)
             (File.Input (File.Name "Foo.hs") fileInput)
       actual `shouldBe` expected

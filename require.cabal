@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b5fbb89313fc25a016996a3226294577eb819df7a681a9f5f08459446898196f
+-- hash: bb70ccb8324225986d8fb8a3a54207684bea945c731d90225ec3d9bde1df2cfe
 
 name:           require
 version:        0.4.8
@@ -34,6 +34,7 @@ source-repository head
 library
   exposed-modules:
       Require
+      Require.Error
       Require.File
       Require.Parser
       Require.Transform
@@ -45,10 +46,13 @@ library
   default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
   ghc-options: -Wall
   build-depends:
-      base >=4.9 && <5
+      ansi-terminal
+    , base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
+    , dlist
     , megaparsec >=7 && <9
+    , mtl >=2.2.1
     , optparse-generic
     , relude
     , text >=1.2.3.0 && <2
@@ -61,12 +65,15 @@ executable autorequirepp
   hs-source-dirs:
       executable/AutoRequire/
   default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
-  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
+  ghc-options: -Wall -rtsopts
   build-depends:
-      base >=4.9 && <5
+      ansi-terminal
+    , base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
+    , dlist
     , megaparsec >=7 && <9
+    , mtl >=2.2.1
     , optparse-generic
     , relude
     , require
@@ -80,12 +87,15 @@ executable requirepp
   hs-source-dirs:
       executable/Require/
   default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
-  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
+  ghc-options: -Wall -rtsopts
   build-depends:
-      base >=4.9 && <5
+      ansi-terminal
+    , base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
+    , dlist
     , megaparsec >=7 && <9
+    , mtl >=2.2.1
     , optparse-generic
     , relude
     , require
@@ -102,10 +112,13 @@ test-suite require-test-suite
   default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
   ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
   build-depends:
-      base >=4.9 && <5
+      ansi-terminal
+    , base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , directory
+    , dlist
     , megaparsec >=7 && <9
+    , mtl >=2.2.1
     , optparse-generic
     , relude
     , require
@@ -124,11 +137,14 @@ benchmark require-benchmarks
   default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
   ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
   build-depends:
-      base >=4.9 && <5
+      ansi-terminal
+    , base >=4.9 && <5
     , bytestring >=0.10 && <0.11
     , criterion
     , directory
+    , dlist
     , megaparsec >=7 && <9
+    , mtl >=2.2.1
     , optparse-generic
     , relude
     , require
