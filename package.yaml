@@ -32,7 +32,7 @@ dependencies:
   - relude
   - bytestring >= 0.10 && < 0.11
   - text >= 1.2.3.0 && < 2
-  - megaparsec >= 7 && < 9
+  - megaparsec >= 7 && < 10
   - mtl >= 2.2.1
   - directory
   - optparse-generic
