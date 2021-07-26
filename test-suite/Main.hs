@@ -6,6 +6,7 @@ import qualified Require.Transform as Require
 import Require.Types
 import qualified Test.Tasty
 import Test.Tasty.Hspec
+import Test.Hspec
 
 main :: IO ()
 main = do

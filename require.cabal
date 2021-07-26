@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 17d63ecaad4aef59bc1c65336dd500edd837396b8e80b9609aacca8fed98e770
+-- hash: 58b058c63b4c4b036f28e8582dcefbf7490f84f8efc1d5636ab5b0d0cb88f342
 
 name:           require
-version:        0.4.9
+version:        0.4.10
 synopsis:       Scrap your qualified import clutter
 description:    See <https://theam.github.io/require>
 category:       Other
@@ -43,15 +43,20 @@ library
       Paths_require
   hs-source-dirs:
       library
-  default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
+  default-extensions:
+      NoImplicitPrelude
+      OverloadedStrings
+      TypeApplications
+      RecordWildCards
+      DeriveGeneric
   ghc-options: -Wall
   build-depends:
       ansi-terminal
     , base >=4.9 && <5
-    , bytestring >=0.10 && <0.11
+    , bytestring ==0.10.*
     , directory
     , dlist
-    , megaparsec >=7 && <9
+    , megaparsec >=7 && <10
     , mtl >=2.2.1
     , optparse-generic
     , relude
@@ -64,15 +69,20 @@ executable autorequirepp
       Paths_require
   hs-source-dirs:
       executable/AutoRequire/
-  default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
+  default-extensions:
+      NoImplicitPrelude
+      OverloadedStrings
+      TypeApplications
+      RecordWildCards
+      DeriveGeneric
   ghc-options: -Wall -rtsopts
   build-depends:
       ansi-terminal
     , base >=4.9 && <5
-    , bytestring >=0.10 && <0.11
+    , bytestring ==0.10.*
     , directory
     , dlist
-    , megaparsec >=7 && <9
+    , megaparsec >=7 && <10
     , mtl >=2.2.1
     , optparse-generic
     , relude
@@ -86,15 +96,20 @@ executable requirepp
       Paths_require
   hs-source-dirs:
       executable/Require/
-  default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
+  default-extensions:
+      NoImplicitPrelude
+      OverloadedStrings
+      TypeApplications
+      RecordWildCards
+      DeriveGeneric
   ghc-options: -Wall -rtsopts
   build-depends:
       ansi-terminal
     , base >=4.9 && <5
-    , bytestring >=0.10 && <0.11
+    , bytestring ==0.10.*
     , directory
     , dlist
-    , megaparsec >=7 && <9
+    , megaparsec >=7 && <10
     , mtl >=2.2.1
     , optparse-generic
     , relude
@@ -109,15 +124,21 @@ test-suite require-test-suite
       Paths_require
   hs-source-dirs:
       test-suite
-  default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
+  default-extensions:
+      NoImplicitPrelude
+      OverloadedStrings
+      TypeApplications
+      RecordWildCards
+      DeriveGeneric
   ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
   build-depends:
       ansi-terminal
     , base >=4.9 && <5
-    , bytestring >=0.10 && <0.11
+    , bytestring ==0.10.*
     , directory
     , dlist
-    , megaparsec >=7 && <9
+    , hspec
+    , megaparsec >=7 && <10
     , mtl >=2.2.1
     , optparse-generic
     , relude
@@ -134,16 +155,21 @@ benchmark require-benchmarks
       Paths_require
   hs-source-dirs:
       benchmark
-  default-extensions: NoImplicitPrelude OverloadedStrings TypeApplications RecordWildCards DeriveGeneric
+  default-extensions:
+      NoImplicitPrelude
+      OverloadedStrings
+      TypeApplications
+      RecordWildCards
+      DeriveGeneric
   ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
   build-depends:
       ansi-terminal
     , base >=4.9 && <5
-    , bytestring >=0.10 && <0.11
+    , bytestring ==0.10.*
     , criterion
     , directory
     , dlist
-    , megaparsec >=7 && <9
+    , megaparsec >=7 && <10
     , mtl >=2.2.1
     , optparse-generic
     , relude
